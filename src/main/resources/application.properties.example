@@ -1,0 +1,4 @@
+spring.application.name=coin
+
+upbit.api.key=${UPBIT_API_KEY}
+upbit.secret.key=${UPBIT_SECRET_KEY}
