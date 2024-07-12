@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 
 /**
@@ -24,6 +26,8 @@ public class UpbitScheduler {
     private final UpbitService upbitService;
     private final ScalpingStrategy scalpingStrategy;
     private final TradeRepository tradeRepository;
+
+    DecimalFormat df = new DecimalFormat("#,##0.00"); // Format to two decimal places
 
     // 시뮬레이션 모드 플래그
     private final boolean simulationMode = true;
@@ -42,10 +46,10 @@ public class UpbitScheduler {
         try {
             // Upbit API를 통해 비트코인의 티커 데이터 가져오기
             JsonNode tickerData = upbitService.getTicker(TickerSymbol.KRW_BTC);
-            double currentPrice = tickerData.get(0).get("trade_price").asDouble();
-            double currentVolume = tickerData.get(0).get("acc_trade_volume_24h").asDouble(); // 예시로 24시간 거래량 사용
-            System.out.println("Current Price: " + currentPrice);
-            System.out.println("Current Volume: " + currentVolume);
+            BigDecimal currentPrice = tickerData.get(0).get("trade_price").decimalValue();
+            BigDecimal currentVolume = tickerData.get(0).get("acc_trade_volume_24h").decimalValue(); // 예시로 24시간 거래량 사용
+            System.out.println("Current Price: " + df.format(currentPrice));
+            System.out.println("Current Volume: " + df.format(currentVolume));
 
             // 스캘핑 전략을 실행하여 매수 또는 매도 결정을 내림
             executeScalpingStrategy(currentPrice, currentVolume);
@@ -61,7 +65,7 @@ public class UpbitScheduler {
      * @param currentPrice 자산의 현재 가격
      * @param currentVolume 자산의 현재 거래량
      */
-    private void executeScalpingStrategy(double currentPrice, double currentVolume) {
+    private void executeScalpingStrategy(BigDecimal currentPrice, BigDecimal currentVolume) {
         if (scalpingStrategy.shouldBuy(currentPrice, currentVolume)) {
             // 매수 신호가 발생하면 매수 로직 실행
             System.out.println("Simulated buying at price: " + currentPrice);
@@ -84,7 +88,7 @@ public class UpbitScheduler {
      * @param price 거래 가격
      * @param quantity 거래 수량
      */
-    private void saveTrade(String type, double price, double quantity) {
+    private void saveTrade(String type, BigDecimal price, double quantity) {
         Trade trade = new Trade();
         trade.setType(type); // 거래 타입 (매수 또는 매도)
         trade.setPrice(price); // 거래 가격
