@@ -2,11 +2,15 @@ package my.trader.coin.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import my.trader.coin.enums.TickerSymbol;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+/**
+ * Upbit API와 상호작용하여 시장 데이터를 가져옵니다.
+ */
 @Service
 public class UpbitService {
 
@@ -26,8 +30,14 @@ public class UpbitService {
         this.objectMapper = new ObjectMapper();
     }
 
-    public JsonNode getTicker(String market) {
-        String url = "/ticker?markets=" + market;
+    /**
+     * 지정된 거래 쌍에 대한 티커 데이터를 가져옵니다.
+     *
+     * @param market 거래 쌍을 나타내는 enum 값
+     * @return JsonNode 형태의 티커 데이터
+     */
+    public JsonNode getTicker(TickerSymbol market) {
+        String url = "/ticker?markets=" + market.getSymbol();
         Mono<String> response = webClient.get()
                 .uri(url)
                 .retrieve()
@@ -39,6 +49,4 @@ public class UpbitService {
             throw new RuntimeException("Error fetching ticker data", e);
         }
     }
-
-    // 추가적인 API 메서드를 여기에 추가할 수 있습니다.
 }
