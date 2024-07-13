@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class Trade {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,6 +21,4 @@ public class Trade {
     private BigDecimal price;
     private Double quantity;
     private LocalDateTime timestamp;
-
-    // getters and setters
 }

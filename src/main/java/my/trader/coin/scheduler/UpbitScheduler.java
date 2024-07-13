@@ -41,13 +41,14 @@ public class UpbitScheduler {
     /**
      * 매 분마다 시장 데이터를 가져오고 스캘핑 전략을 실행합니다.
      */
-    @Scheduled(fixedRate = 60000) // 1분 간격으로 실행
+    @Scheduled(cron = "0 * * * * *") // 매 분 0초에 실행
     public void fetchMarketData() {
         try {
             // Upbit API를 통해 비트코인의 티커 데이터 가져오기
             JsonNode tickerData = upbitService.getTicker(TickerSymbol.KRW_BTC);
             BigDecimal currentPrice = tickerData.get(0).get("trade_price").decimalValue();
             BigDecimal currentVolume = tickerData.get(0).get("acc_trade_volume_24h").decimalValue(); // 예시로 24시간 거래량 사용
+            System.out.println(LocalDateTime.now());
             System.out.println("Current Price: " + df.format(currentPrice));
             System.out.println("Current Volume: " + df.format(currentVolume));
 
@@ -68,15 +69,29 @@ public class UpbitScheduler {
     private void executeScalpingStrategy(BigDecimal currentPrice, BigDecimal currentVolume) {
         if (scalpingStrategy.shouldBuy(currentPrice, currentVolume)) {
             // 매수 신호가 발생하면 매수 로직 실행
-            System.out.println("Simulated buying at price: " + currentPrice);
+            System.out.println("Simulated buying at price: " + df.format(currentPrice));
+            saveTrade("BUY", currentPrice, 0.01); // 예제에서는 0.01 BTC 매수
             if (!simulationMode) {
-                saveTrade("BUY", currentPrice, 0.01); // 예제에서는 0.01 BTC 매수
+                // 실제 업비트 매수 API 호출 예시
+                boolean buySuccess = upbitService.executeBuyOrder("KRW-BTC", currentPrice, 0.01);
+                if (buySuccess) {
+                    System.out.println("Successfully bought BTC at price: " + currentPrice);
+                } else {
+                    System.out.println("Failed to buy BTC at price: " + currentPrice);
+                }
             }
         } else if (scalpingStrategy.shouldSell(currentPrice, currentVolume)) {
             // 매도 신호가 발생하면 매도 로직 실행
-            System.out.println("Simulated selling at price: " + currentPrice);
+            System.out.println("Simulated selling at price: " + df.format(currentPrice));
+            saveTrade("SELL", currentPrice, 0.01); // 예제에서는 0.01 BTC 매도
             if (!simulationMode) {
-                saveTrade("SELL", currentPrice, 0.01); // 예제에서는 0.01 BTC 매도
+                // 실제 업비트 매도 API 호출 예시
+                boolean sellSuccess = upbitService.executeSellOrder("KRW-BTC", currentPrice, 0.01);
+                if (sellSuccess) {
+                    System.out.println("Successfully sold BTC at price: " + currentPrice);
+                } else {
+                    System.out.println("Failed to sell BTC at price: " + currentPrice);
+                }
             }
         }
     }

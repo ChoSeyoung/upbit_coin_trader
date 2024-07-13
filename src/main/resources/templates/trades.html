@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Trade List</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<h1>Trade List</h1>
+<table border="1">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Price</th>
+        <th>Quantity</th>
+        <th>Timestamp</th>
+        <th>Type</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="trade : ${trades}">
+        <td th:text="${trade.id}">ID</td>
+        <td th:text="${trade.price}">Price</td>
+        <td th:text="${trade.quantity}">Quantity</td>
+        <td th:text="${trade.timestamp}">Timestamp</td>
+        <td th:text="${trade.type}">Type</td>
+    </tr>
+    </tbody>
+</table>
+<h2>Total Profit: <span th:text="${profit}">Profit</span></h2>
+
+<h2>Trade Quantity Over Time</h2>
+<canvas id="tradeChart" width="400" height="200"></canvas>
+
+<script>
+    // 데이터를 자바스크립트 변수로 전달
+    var trades = /*[[${trades}]]*/ [];
+    trades = JSON.parse(trades.replace(/&quot;/g, '\"')); // 특수문자 변환
+
+    var labels = trades.map(function(trade) {
+        return trade.timestamp;
+    });
+
+    var data = trades.map(function(trade) {
+        return trade.quantity;
+    });
+
+    var ctx = document.getElementById('tradeChart').getContext('2d');
+    var tradeChart = new Chart(ctx, {
+        type: 'line', // 라인 차트로 설정
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Trade Quantity',
+                data: data,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'day'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Quantity'
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
