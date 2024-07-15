@@ -22,7 +22,6 @@ public class ScalpingStrategy {
     // 손절매 및 목표 이익 비율을 설정 (수정 불가)
     private static final BigDecimal STOP_LOSS_PERCENTAGE = BigDecimal.valueOf(0.015); // 2% 손절매
     private static final BigDecimal TAKE_PROFIT_PERCENTAGE = BigDecimal.valueOf(0.015); // 2% 목표 이익
-    private static final BigDecimal EXCHANGE_FEE_PERCENTAGE = BigDecimal.valueOf(0.0005); // 거래수수료
 
     // 진입 가격
     private BigDecimal entryPrice = new BigDecimal(0);

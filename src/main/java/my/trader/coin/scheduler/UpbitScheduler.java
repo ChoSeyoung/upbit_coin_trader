@@ -35,6 +35,7 @@ public class UpbitScheduler {
 
     // 시뮬레이션 모드 플래그
     private final boolean simulationMode = true;
+    private final BigDecimal EXCHANGE_FEE_PERCENTAGE = BigDecimal.valueOf(0.0005); // 거래수수료
 
     public UpbitScheduler(UpbitService upbitService, ScalpingStrategy scalpingStrategy, TradeRepository tradeRepository, UserRepository userRepository) {
         this.upbitService = upbitService;
@@ -58,6 +59,7 @@ public class UpbitScheduler {
             System.out.println("Current Volume: " + df.format(currentVolume));
 
             // 스캘핑 전략을 실행하여 매수 또는 매도 결정을 내림
+            currentPrice = currentPrice.add(currentPrice.multiply(EXCHANGE_FEE_PERCENTAGE));
             executeScalpingStrategy(currentPrice, currentVolume);
         } catch (Exception e) {
             // 예외 발생 시 로그에 에러 메시지 출력
