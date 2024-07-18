@@ -45,7 +45,7 @@ public class UpbitScheduler {
     // 거래 수수료
     private final BigDecimal exchangeFeePercentage;
 
-    public UpbitScheduler(UpbitService upbitService, ScalpingStrategy scalpingStrategy, TradeRepository tradeRepository, UserRepository userRepository, @Value("${exchange.fee.percentage}") String exchangeFeePercentage) {
+    public UpbitScheduler(UpbitService upbitService, ScalpingStrategy scalpingStrategy, TradeRepository tradeRepository, UserRepository userRepository, @Value("${upbit.exchange.fee}") String exchangeFeePercentage) {
         this.upbitService = upbitService;
         this.scalpingStrategy = scalpingStrategy;
         this.tradeRepository = tradeRepository;
