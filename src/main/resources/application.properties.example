@@ -4,7 +4,7 @@ spring.application.name=coin
 
 upbit.api.key=${UPBIT_API_KEY}
 upbit.secret.key=${UPBIT_SECRET_KEY}
-upbit.exchange.fee=${UPBIT_EXCHANGE_FEE}
+upbit.ratio.exchange=${UPBIT_EXCHANGE_FEE}
 upbit.ticker.symbok=${UPBIT_TICKER_SYMBOL}
 
 spring.datasource.url=jdbc:mysql://localhost:3306/upbit

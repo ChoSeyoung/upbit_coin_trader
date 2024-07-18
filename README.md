@@ -3,7 +3,11 @@
 ## (참고) 개발자 개발 환경
 - MacBook Pro 16" Apple M3 Pro 36GB SONOMA
 - IntelliJ, Docker Desktop, DataGrip
-- 
+- CheckStyle-IDEA Plugin (Google Check)
+  - IDEA 종속된 플러그인을 사용합니다만, 타 IDEA 에서 PR 생성 후 요청주시면 코드 검토 후 승인하겠습니다.
+  - 해당 플러그인 관련된 설정은 config/checkstyle.xml 파일로 설정합니다.
+  - Setting > Code Editor > Code Style > Java > 설정 아이콘 > import Scheme > 파일선택 과정으로 적용할 수 있습니다.
+
 ## 사전 요구 사항 / Prerequisites
 - Java Development Kit 22 이상
 - Gradle (IntelliJ 를 사용하고 있다면 설치할 필요 없습니다)
@@ -33,7 +37,7 @@ upbit.api.key=${your_api_key_here}
 # 업비트 SECRET KEY 를 확인하세요
 upbit.secret.key=${your_secret_key_here}
 # 업비트 매수/매도 수수료율을 항상 확인하세요
-upbit.exchange.fee=${platform_exchange_fee}
+upbit.ratio.exchange=${platform_exchange_fee}
 # 업비트에서 본인이 거래하고싶은 티커심볼을 확인하고 설정합니다.
 upbit.ticker.symbol=${ticker_symbol}
 ```
