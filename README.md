@@ -1,25 +1,28 @@
+# 프로젝트 설정 / Project Setup
 
-# Project Setup
-
-## Prerequisites
-- Java developmentment Kit 22 or later
+## 사전 요구 사항 / Prerequisites
+- Java Development Kit 22 이상
 - Gradle
 
-## Setup Instructions
+## 설정 지침 / Setup Instructions
 
-### 1. Clone the repository
+### 1. 리포지토리 클론 / Clone the repository
 ```sh
 git clone https://github.com/ChoSeyoung/upbit_coin_trader.git
+
 cd upbit_coin_trader
 ```
 
-### 2. Copy application.properties.example to application.properties
+### 2. application.properties.example을 application.properties로 복사 / Copy application.properties.example to application.properties
+
 ```sh
 cp src/main/resources/application.properties.example src/main/resources/application.properties
 ```
 
-### 3. Configure your API keys
+### 3. API 키 구성 / Configure your API keys
 ```sh
+# src/main/resources/application.properties
+
 upbit.api.key=your_api_key_here
 upbit.secret.key=your_secret_key_here
 ```
