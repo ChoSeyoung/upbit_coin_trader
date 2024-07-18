@@ -49,64 +49,38 @@ cd docker/mysql
 # 해당 컨테이너의 데이터 디렉토리는 ${ProjectRootDirectory}/docker/mysql/data 에 쌓이므로 mysql 을 기본적으로 사용하고 있는 PC 에서도 데이터 이슈 없이 사용할 수 있습니다.
 docker-compose up
 ```
+
 ---
 
 # 기여 가이드 / Contribution Guide
 
 ## 소개 / Introduction
 
-이 가이드는 우리 오픈소스 프로젝트에 기여하기 위한 브랜치 전략을 설명합니다. 이 전략을 따르면 프로젝트 구조를 깨끗하고 관리하기 쉽게 유지할 수 있으며, 모든 기여자 간의 효율적인 협업을 보장할 수 있습니다.
-
 This guide outlines the branch strategy for contributing to our open-source project. Following this strategy helps maintain a clean and manageable project structure, ensuring efficient collaboration among all contributors.
 
 ## 브랜치 전략 / Branch Strategy
-
-해당 프로젝트는 특정 플랫폼에서 동작하는 것이 아닌 localhost 환경에서 개발하는 것을 기반으로 만들어졌으므로, release 및 hotfix 브랜치는 이 프로젝트의 브랜치 전략에서 제외되었습니다. 이 브랜치들이 필요하신 경우, issue를 등록하여 의견을 남겨주시기 바랍니다.
 
 Since this project is developed based on a localhost environment rather than running on a specific platform, the release and hotfix branches are excluded from this project's branch strategy. If you need these branches, please submit an issue to share your opinion.
 
 ### 1. 메인 브랜치 / Main Branches
 
 #### 1.1 `main`
-`main` 브랜치는 안정적인 릴리스 코드를 포함합니다. 모든 새로운 기능과 수정 사항은 철저히 테스트된 후 풀 리퀘스트를 통해 `main`에 병합되어야 합니다.
 
 The `main` branch contains the stable, released code. All new features and fixes must be merged into `main` through pull requests after they have been thoroughly tested.
 
 #### 1.2 `development`
-`development` 브랜치는 기능 통합을 위한 브랜치입니다. 이는 릴리스 전에 모든 개발 작업이 병합되는 곳으로, 다음 릴리스를 위한 최신 개발 변경 사항을 포함합니다.
 
 The `development` branch serves as the integration branch for features. This is where all developmentment work is merged before being released. It contains the latest delivered developmentment changes for the next release.
 
 ### 2. 지원 브랜치 / Supporting Branches
 
 #### 2.1 기능 브랜치 / Feature Branches
-기능 브랜치는 다가오는 또는 먼 미래의 릴리스를 위한 새로운 기능을 개발하는 데 사용됩니다.
-
-- **명명 규칙:** `feature/feature-name`
-- **브랜치 시작 지점:** `development`
-- **병합 대상:** `development`
-
 Feature branches are used to development new features for the upcoming or a distant future release.
 
 - **Naming convention:** `feature/feature-name`
-- **Branching from:** `development`
 - **Merging into:** `development`
 
 ##### 단계 / Steps:
-1. `development` 브랜치에서 새로운 기능 브랜치를 만듭니다:
-    ```sh
-    git checkout development
-    git pull origin development
-    git checkout -b feature/feature-name
-    ```
-2. 기능을 개발합니다.
-3. 변경 사항을 커밋합니다.
-4. 기능 브랜치를 리포지토리에 푸시합니다:
-    ```sh
-    git push origin feature/feature-name
-    ```
-5. 변경 사항을 `development`에 병합하기 위한 풀 리퀘스트를 만듭니다.
-
 1. Create a new feature branch from `development`:
     ```sh
     git checkout development
@@ -122,33 +96,12 @@ Feature branches are used to development new features for the upcoming or a dist
 5. Create a pull request to merge your changes into `development`.
 
 #### 2.2 버그 수정 브랜치 / Bugfix Branches
-버그 수정 브랜치는 프로덕션 릴리스를 빠르게 패치하는 데 사용됩니다.
-
-- **명명 규칙:** `bugfix/bugfix-name`
-- **브랜치 시작 지점:** `development`
-- **병합 대상:** `development`
-
 Bugfix branches are used to quickly patch production releases.
 
 - **Naming convention:** `bugfix/bugfix-name`
-- **Branching from:** `development`
 - **Merging into:** `development`
 
 ##### 단계 / Steps:
-1. `development` 브랜치에서 새로운 버그 수정 브랜치를 만듭니다:
-    ```sh
-    git checkout development
-    git pull origin development
-    git checkout -b bugfix/bugfix-name
-    ```
-2. 버그를 수정합니다.
-3. 변경 사항을 커밋합니다.
-4. 버그 수정 브랜치를 리포지토리에 푸시합니다:
-    ```sh
-    git push origin bugfix/bugfix-name
-    ```
-5. 변경 사항을 `development`에 병합하기 위한 풀 리퀘스트를 만듭니다.
-
 1. Create a new bugfix branch from `development`:
     ```sh
     git checkout development
@@ -165,11 +118,9 @@ Bugfix branches are used to quickly patch production releases.
 
 ---
 
-# 프로젝트 이해를 위한 용어 암호화폐 거래시장 용어설명 및 가이드
+# 암호화폐 거래시장 용어설명 및 가이드
 
 ## 소개 / Introduction
-
-이 가이드는 암호화폐 시장과 투자에 필수적인 주요 금융 용어에 대한 개요를 제공합니다. 초보자든 경험 많은 투자자든, 이 용어들은 디지털 자산 세계를 보다 효과적으로 탐색하는 데 도움이 될 것입니다.
 
 This guide provides an overview of key financial terms that are essential for understanding the cryptocurrency market and investing. Whether you're
 a beginner or an experienced investor, these terms will help you navigate the world of digital assets more effectively.
