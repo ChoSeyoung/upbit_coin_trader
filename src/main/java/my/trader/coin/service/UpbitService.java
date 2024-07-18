@@ -25,6 +25,9 @@ public class UpbitService {
   @Value("${upbit.secret.key}")
   private String secretKey;
 
+  /**
+   * this is constructor.
+   */
   public UpbitService() {
     this.webClient = WebClient.builder()
           .baseUrl("https://api.upbit.com/v1")

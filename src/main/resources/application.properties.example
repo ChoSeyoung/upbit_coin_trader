@@ -2,10 +2,12 @@ simulation.mode = true
 
 spring.application.name=coin
 
-upbit.api.key=${UPBIT_API_KEY}
-upbit.secret.key=${UPBIT_SECRET_KEY}
-upbit.ratio.exchange=${UPBIT_EXCHANGE_FEE}
-upbit.ticker.symbok=${UPBIT_TICKER_SYMBOL}
+upbit.api.key=ABCDEFG
+upbit.secret.key=ABCDEFG
+upbit.ticker.symbol=KRW-XRP
+upbit.ratio.exchange=0.0005
+upbit.ratio.profit=0.015
+upbit.ratio.loss=0.015
 
 spring.datasource.url=jdbc:mysql://localhost:3306/upbit
 spring.datasource.username=user
