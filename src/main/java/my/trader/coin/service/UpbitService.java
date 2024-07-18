@@ -1,14 +1,14 @@
 package my.trader.coin.service;
 
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
 import my.trader.coin.enums.TickerSymbol;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-
-import java.math.BigDecimal;
 
 /**
  * Upbit API와 상호작용하여 시장 데이터를 가져옵니다.
@@ -16,14 +16,16 @@ import java.math.BigDecimal;
 @Service
 public class UpbitService {
 
-  private final WebClient webClient;
-  private final ObjectMapper objectMapper;
-
+  // API KEY
   @Value("${upbit.api.key}")
   private String apiKey;
 
+  // API SECRET KEY
   @Value("${upbit.secret.key}")
   private String secretKey;
+
+  private final WebClient webClient;
+  private final ObjectMapper objectMapper;
 
   /**
    * this is constructor.
@@ -55,10 +57,21 @@ public class UpbitService {
     }
   }
 
-  public boolean executeBuyOrder(String market, BigDecimal price, double quantity) {
-    // 업비트 API를 호출하여 매수 주문을 실행하는 코드
-    // 실제 구현시에는 업비트 API의 요구사항에 맞게 작성해야 함
-    // 아래는 가상의 예시 코드이므로 실제 업비트 API를 호출하도록 수정해야 합니다.
+  /**
+   * 업비트 API를 호출하여 매수 주문을 실행하는 코드.
+   * <a href="https://docs.upbit.com/reference/%EC%A3%BC%EB%AC%B8%ED%95%98%EA%B8%B0">...</a>
+   *
+   * @param tickerSymbol 티커심볼
+   * @param price        매수가격
+   * @param quantity     수량
+   * @return 매수주문성공여부
+   */
+  public boolean executeBuyOrder(String tickerSymbol, BigDecimal price, double quantity) {
+    String url = "/v1/orders";
+    Mono<String> response = webClient.get()
+          .uri(url)
+          .retrieve()
+          .bodyToMono(String.class);
 
     // 실제 업비트 API 호출 예시
     // String apiUrl = "https://api.upbit.com/v1/orders";
@@ -71,7 +84,16 @@ public class UpbitService {
     return true;
   }
 
-  public boolean executeSellOrder(String market, BigDecimal price, double quantity) {
+  /**
+   * 업비트 API를 호출하여 매수 주문을 실행하는 코드.
+   <a href="https://docs.upbit.com/reference/%EC%A3%BC%EB%AC%B8%ED%95%98%EA%B8%B0">...</a>
+
+   * @param tickerSymbol 티커심볼
+   * @param price        매도가격
+   * @param quantity     수량
+   * @return 매도주문성공여부
+   */
+  public boolean executeSellOrder(String tickerSymbol, BigDecimal price, double quantity) {
     // 업비트 API를 호출하여 매도 주문을 실행하는 코드
     // 실제 구현시에는 업비트 API의 요구사항에 맞게 작성해야 함
     // 아래는 가상의 예시 코드이므로 실제 업비트 API를 호출하도록 수정해야 합니다.

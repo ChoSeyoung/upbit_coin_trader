@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import my.trader.coin.enums.ColorfulConsoleOutput;
 import my.trader.coin.enums.TickerSymbol;
 import my.trader.coin.enums.TradeType;
 import my.trader.coin.model.Trade;
@@ -26,10 +27,6 @@ import org.springframework.stereotype.Component;
 public class UpbitScheduler {
   private static final Logger logger = LoggerFactory.getLogger(UpbitScheduler.class);
 
-  private final UpbitService upbitService;
-  private final ScalpingStrategy scalpingStrategy;
-  private final TradeRepository tradeRepository;
-  private final UserRepository userRepository;
   // 거래수수료
   @Value("${upbit.ratio.exchange}")
   private BigDecimal exchangeFeePercentage;
@@ -38,17 +35,23 @@ public class UpbitScheduler {
   private boolean simulationMode;
   // 티커 심볼
   @Value("${upbit.ticker.symbol}")
-  private String tickerSymlbo;
+  private String tickerSymbol;
+
+  private final UpbitService upbitService;
+  private final ScalpingStrategy scalpingStrategy;
+  private final TradeRepository tradeRepository;
+  private final UserRepository userRepository;
+
   // 콘솔 데이터 출력용 formatter
   DecimalFormat df = new DecimalFormat("#,##0.00");
 
   /**
    * this is constructor.
    *
-   * @param upbitService          UpbitService
-   * @param scalpingStrategy      ScalpingStrategy
-   * @param tradeRepository       TradeRepository
-   * @param userRepository        UserRepository
+   * @param upbitService     UpbitService
+   * @param scalpingStrategy ScalpingStrategy
+   * @param tradeRepository  TradeRepository
+   * @param userRepository   UserRepository
    */
   public UpbitScheduler(
         UpbitService upbitService,
@@ -69,13 +72,18 @@ public class UpbitScheduler {
   public void fetchMarketData() {
     try {
       // Upbit API를 통해 비트코인의 티커 데이터 가져오기
-      JsonNode tickerData = upbitService.getTicker(TickerSymbol.KRW_BTC.getSymbol());
+      JsonNode tickerData = upbitService.getTicker(tickerSymbol);
       BigDecimal currentPrice = tickerData.get(0).get("trade_price").decimalValue();
       BigDecimal currentVolume =
-            tickerData.get(0).get("acc_trade_volume_24h").decimalValue(); // 예시로 24시간 거래량 사용
-      System.out.println(LocalDateTime.now());
-      System.out.println("Current Price: " + df.format(currentPrice));
-      System.out.println("Current Volume: " + df.format(currentVolume));
+            tickerData.get(0).get("acc_trade_volume_24h").decimalValue();
+      ColorfulConsoleOutput.printWithColor(LocalDateTime.now().toString(),
+            ColorfulConsoleOutput.YELLOW);
+      ColorfulConsoleOutput.printWithColor(
+            String.format("Current Price: %s", df.format(currentPrice)),
+            ColorfulConsoleOutput.YELLOW);
+      ColorfulConsoleOutput.printWithColor(
+            String.format("Current Volume: %s", df.format(currentVolume)),
+            ColorfulConsoleOutput.YELLOW);
 
       // 스캘핑 전략을 실행하여 매수 또는 매도 결정을 내림
       currentPrice = currentPrice.add(currentPrice.multiply(exchangeFeePercentage));
@@ -100,32 +108,38 @@ public class UpbitScheduler {
             && user.getInventory() == 0) {
         // 매수 신호가 발생하면 매수 로직 실행
         System.out.println("Simulated buying at price: " + df.format(currentPrice));
-        saveUser(TradeType.BUY.getName(), tickerSymlbo, 0.01);
-        saveTrade(TradeType.BUY.getName(), tickerSymlbo, currentPrice, 0.01, simulationMode);
+        saveUser(TradeType.BUY.getName(), tickerSymbol,
+              TickerSymbol.getQuantityBySymbol(tickerSymbol));
+        saveTrade(TradeType.BUY.getName(), tickerSymbol, currentPrice,
+              TickerSymbol.getQuantityBySymbol(tickerSymbol), simulationMode);
         if (!simulationMode) {
           // 실제 업비트 매수 API 호출 예시
-          boolean buySuccess = upbitService.executeBuyOrder(tickerSymlbo, currentPrice, 0.01);
+          boolean buySuccess = upbitService.executeBuyOrder(tickerSymbol, currentPrice,
+                TickerSymbol.getQuantityBySymbol(tickerSymbol));
           if (buySuccess) {
             System.out.println("Successfully bought BTC at price: " + currentPrice);
           } else {
-            System.out.println("Failed to buy BTC at price: " + currentPrice);
+            logger.error("Failed to buy BTC at price: {}", currentPrice);
           }
         }
       } else if (scalpingStrategy.shouldSell(currentPrice, currentVolume)
             && user.getInventory() > 0) {
         // 매도 신호가 발생하면 매도 로직 실행
         System.out.println("Simulated selling at price: " + df.format(currentPrice));
-        saveUser(TradeType.SELL.getName(), tickerSymlbo, 0.01); // 사용자 인벤토리 업데이트
-        saveTrade(TradeType.SELL.getName(), tickerSymlbo, currentPrice, 0.01,
+        saveUser(TradeType.SELL.getName(), tickerSymbol,
+              TickerSymbol.getQuantityBySymbol(tickerSymbol));
+        saveTrade(TradeType.SELL.getName(), tickerSymbol, currentPrice,
+              TickerSymbol.getQuantityBySymbol(tickerSymbol),
               simulationMode); // 예제에서는 0.01 BTC 매도
         if (!simulationMode) {
           // 실제 업비트 매도 API 호출 예시
           boolean sellSuccess =
-                upbitService.executeSellOrder("KRW-BTC", currentPrice, 0.01);
+                upbitService.executeSellOrder(tickerSymbol, currentPrice,
+                      TickerSymbol.getQuantityBySymbol(tickerSymbol));
           if (sellSuccess) {
-            System.out.println("Successfully sold BTC at price: " + currentPrice);
+            System.out.printf("Successfully sold %s at price: %s%n", tickerSymbol, currentPrice);
           } else {
-            System.out.println("Failed to sell BTC at price: " + currentPrice);
+            logger.error("Failed to sell {} at price: {}", tickerSymbol, currentPrice);
           }
         }
       }
@@ -136,7 +150,7 @@ public class UpbitScheduler {
    * 거래 정보를 저장하는 메서드.
    *
    * @param type           거래 타입 (ex. BUY or SELL)
-   * @param tickerSymlbo         마켓 심볼 (ex. KRW-BTC)
+   * @param tickerSymlbo   마켓 심볼 (ex. KRW-BTC)
    * @param price          거래 가격
    * @param quantity       거래 수량
    * @param simulationMode 모의투자 여부
@@ -156,9 +170,9 @@ public class UpbitScheduler {
   /**
    * 사용자의 인벤토리를 업데이트하는 메서드.
    *
-   * @param type     거래 타입 (ex. BUY or SELL)
-   * @param tickerSymlbo   마켓 심볼 (ex. KRW-BTC)
-   * @param quantity 거래 수량
+   * @param type         거래 타입 (ex. BUY or SELL)
+   * @param tickerSymlbo 마켓 심볼 (ex. KRW-BTC)
+   * @param quantity     거래 수량
    */
   private void saveUser(String type, String tickerSymlbo, double quantity) {
     Optional<User> userOptional = userRepository.findById(1L);
