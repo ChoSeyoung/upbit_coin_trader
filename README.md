@@ -1,8 +1,13 @@
 # 프로젝트 설정 / Project Setup
 
+## (참고) 개발자 개발 환경
+- MacBook Pro 16" Apple M3 Pro 36GB SONOMA
+- IntelliJ, Docker Desktop, DataGrip
+- 
 ## 사전 요구 사항 / Prerequisites
 - Java Development Kit 22 이상
-- Gradle
+- Gradle (IntelliJ 를 사용하고 있다면 설치할 필요 없습니다)
+- Docker Desktop
 
 ## 설정 지침 / Setup Instructions
 
@@ -19,14 +24,27 @@ cd upbit_coin_trader
 cp src/main/resources/application.properties.example src/main/resources/application.properties
 ```
 
-### 3. API 키 구성 / Configure your API keys
+### 3. API 키 구성 및 필수값 설정 / Configure your API keys and environment keys
 ```sh
 # src/main/resources/application.properties
 
-upbit.api.key=your_api_key_here
-upbit.secret.key=your_secret_key_here
+# 업비트 API KEY 를 확인하세요
+upbit.api.key=${your_api_key_here}
+# 업비트 SECRET KEY 를 확인하세요
+upbit.secret.key=${your_secret_key_here}
+# 업비트 매수/매도 수수료율을 항상 확인하세요
+upbit.exchange.fee=${platform_exchange_fee}
+# 업비트에서 본인이 거래하고싶은 티커심볼을 확인하고 설정합니다.
+upbit.ticker.symbol=${ticker_symbol}
 ```
 
+### 4. Docker 를 이용한 local mysql 실행 / Run localhost MySQL by Docker
+```sh
+cd docker/mysql
+# 필요시 docker-compose.yml 파일을 변경할 수 있습니다. (포트 및 기타설정 등등)
+# 해당 컨테이너의 데이터 디렉토리는 ${ProjectRootDirectory}/docker/mysql/data 에 쌓이므로 mysql 을 기본적으로 사용하고 있는 PC 에서도 데이터 이슈 없이 사용할 수 있습니다.
+docker-compose up
+```
 ---
 
 # 기여 가이드 / Contribution Guide
