@@ -16,9 +16,10 @@ public class Trade {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    private String symbol; // EX: KRW-BTC, KRW-XRP
     private String type; // BUY or SELL
     private BigDecimal price;
     private Double quantity;
     private LocalDateTime timestamp;
+    private Boolean simulationMode;
 }

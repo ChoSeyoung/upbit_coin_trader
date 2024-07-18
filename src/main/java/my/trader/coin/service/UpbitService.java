@@ -35,11 +35,11 @@ public class UpbitService {
     /**
      * 지정된 거래 쌍에 대한 티커 데이터를 가져옵니다.
      *
-     * @param market 거래 쌍을 나타내는 enum 값
+     * @param symbol 티커심볼
      * @return JsonNode 형태의 티커 데이터
      */
-    public JsonNode getTicker(TickerSymbol market) {
-        String url = "/ticker?markets=" + market.getSymbol();
+    public JsonNode getTicker(String symbol) {
+        String url = String.format("/ticker?markets=%s", symbol);
         Mono<String> response = webClient.get()
                 .uri(url)
                 .retrieve()
