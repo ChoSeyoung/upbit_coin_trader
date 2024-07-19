@@ -3,6 +3,7 @@ package my.trader.coin.scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,7 +33,7 @@ public class UpbitScheduler {
 
   // 거래수수료
   @Value("${upbit.ratio.exchange}")
-  private double exchangeFeePercentage;
+  private double exchangeFeeRatio;
   // 시뮬레이션 모드 플래그
   @Value("${simulation.mode}")
   private boolean simulationMode;
@@ -89,8 +90,10 @@ public class UpbitScheduler {
             ColorfulConsoleOutput.YELLOW);
 
       // 스캘핑 전략을 실행하여 매수 또는 매도 결정을 내림
-      currentPrice = currentPrice + (currentPrice * exchangeFeePercentage);
       executeScalpingStrategy(currentPrice, currentVolume);
+
+      // 현재 수익률 조회 및 로깅
+      calculateAndPrintProfit();
     } catch (Exception e) {
       // 예외 발생 시 로그에 에러 메시지 출력
       logger.error("시장 데이터를 가져오는 중 오류 발생", e);
@@ -148,6 +151,44 @@ public class UpbitScheduler {
       } catch (Exception e) {
         logger.error("주문 상태를 확인하는 중 오류 발생", e);
       }
+    }
+  }
+
+  /**
+   * 수익률 조회하여 콘솔에 로깅.
+   */
+  private void calculateAndPrintProfit() {
+    try {
+      List<Trade> buyTrades = tradeRepository.findByType(TradeType.BUY.getName());
+      List<Trade> sellTrades = tradeRepository.findByType(TradeType.SELL.getName());
+
+      List<Double> profitPercentages = new ArrayList<>();
+
+      while (!buyTrades.isEmpty() && !sellTrades.isEmpty()) {
+        Trade buyTrade = buyTrades.remove(0);
+        Trade sellTrade = sellTrades.remove(0);
+
+        double profit = sellTrade.getPrice() - buyTrade.getPrice();
+        double profitPercentage = (profit / buyTrade.getPrice()) * 100;
+
+        profitPercentages.add(profitPercentage);
+      }
+
+      if (profitPercentages.isEmpty()) {
+        ColorfulConsoleOutput.printWithColor("No matched trades found.", ColorfulConsoleOutput.GREEN);
+      } else {
+        double averageProfitPercentage = profitPercentages.stream()
+              .mapToDouble(Double::doubleValue)
+              .average()
+              .orElse(0.0);
+        ColorfulConsoleOutput.printWithColor(
+              String.format("Average Profit Percentage: %.2f%%", averageProfitPercentage),
+              ColorfulConsoleOutput.GREEN);
+      }
+
+    } catch (Exception e) {
+      // 예외 발생 시 로그에 에러 메시지 출력
+      logger.error("거래 데이터를 가져오는 중 오류 발생", e);
     }
   }
 
@@ -233,6 +274,7 @@ public class UpbitScheduler {
     trade.setType(type); // 거래 타입 (매수 또는 매도)
     trade.setPrice(price); // 거래 가격
     trade.setQuantity(quantity); // 거래 수량
+    trade.setExchangeFee(exchangeFeeRatio);
     trade.setTimestamp(LocalDateTime.now()); // 거래 시간
     trade.setIdentifier(identifier); // 식별자
     trade.setSimulationMode(simulationMode); // 시뮬레이션 모드

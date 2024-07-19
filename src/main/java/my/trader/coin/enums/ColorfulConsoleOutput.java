@@ -1,6 +1,9 @@
 package my.trader.coin.enums;
 
 import lombok.Getter;
+import my.trader.coin.scheduler.UpbitScheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 콘솔에 출력할 때 텍스트의 색상을 변경하는 데 사용할 ANSI 컬러 코드 집합체입니다.
@@ -30,7 +33,9 @@ public enum ColorfulConsoleOutput {
    * @param color   ANSI 컬러
    */
   public static void printWithColor(String message, ColorfulConsoleOutput color) {
-    System.out.println(color.getCode() + message + ColorfulConsoleOutput.RESET.getCode());
+    Logger logger = LoggerFactory.getLogger(UpbitScheduler.class);
+
+    logger.info("{}{}{}", color.getCode(), message, ColorfulConsoleOutput.RESET.getCode());
   }
 }
 

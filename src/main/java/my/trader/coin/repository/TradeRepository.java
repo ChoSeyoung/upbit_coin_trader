@@ -12,6 +12,8 @@ import org.springframework.stereotype.Repository;
 public interface TradeRepository extends JpaRepository<Trade, Long> {
   List<Trade> findByIsSignedFalseOrIsSignedIsNull();
 
+  List<Trade> findByType(String type);
+
   Trade findByIdentifier(String identifier);
 
 }

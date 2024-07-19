@@ -24,6 +24,7 @@ public class Trade {
   private String type; // BUY or SELL
   private Double price;
   private Double quantity;
+  private Double exchangeFee;
   private LocalDateTime timestamp;
   private String identifier;
   private Boolean simulationMode;

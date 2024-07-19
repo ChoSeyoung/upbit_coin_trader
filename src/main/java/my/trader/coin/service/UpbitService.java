@@ -3,14 +3,12 @@ package my.trader.coin.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import my.trader.coin.dto.order.OrderRequestDto;
 import my.trader.coin.dto.order.OrderStatusRequestDto;
 import my.trader.coin.util.AuthorizationGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
