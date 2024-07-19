@@ -20,11 +20,14 @@ public class ScalpingStrategy {
   // 최근 거래량을 저장하는 큐
   private final Queue<Double> volumeWindow = new LinkedList<>();
 
-  // 손절매 및 목표 이익 비율을 설정 (수정 불가)
+  // 익절 목표
   @Value("${upbit.ratio.profit}")
   private Double profitRatio;
+  
+  // 손절 목표
   @Value("${upbit.ratio.loss}")
   private Double loseRatio;
+
   // 진입 가격
   private Double entryPrice = 0.0;
 

@@ -34,9 +34,11 @@ public class UpbitScheduler {
   // 거래수수료
   @Value("${upbit.ratio.exchange}")
   private double exchangeFeeRatio;
+
   // 시뮬레이션 모드 플래그
   @Value("${simulation.mode}")
   private boolean simulationMode;
+
   // 티커 심볼
   @Value("${upbit.ticker.symbol}")
   private String tickerSymbol;
