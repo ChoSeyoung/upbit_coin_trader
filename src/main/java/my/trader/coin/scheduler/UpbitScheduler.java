@@ -75,19 +75,20 @@ public class UpbitScheduler {
   @Scheduled(cron = "0 * * * * *") // 매 분 0초에 실행
   public void fetchMarketData() {
     try {
-      // Upbit API를 통해 비트코인의 티커 데이터 가져오기
+      // 시장 데이터 조회
       JsonNode tickerData = upbitService.getTicker(tickerSymbol);
+      // 현재 가격
       Double currentPrice = tickerData.get(0).get("trade_price").doubleValue();
-      Double currentVolume =
-            tickerData.get(0).get("acc_trade_volume_24h").doubleValue();
-      ColorfulConsoleOutput.printWithColor(LocalDateTime.now().toString(),
-            ColorfulConsoleOutput.YELLOW);
+      // 현재 거래량
+      Double currentVolume = tickerData.get(0).get("acc_trade_volume_24h").doubleValue();
+      // 현재 가격 및 거래량 로깅
       ColorfulConsoleOutput.printWithColor(
-            String.format("Current Price: %s", df.format(currentPrice)),
-            ColorfulConsoleOutput.YELLOW);
-      ColorfulConsoleOutput.printWithColor(
-            String.format("Current Volume: %s", df.format(currentVolume)),
-            ColorfulConsoleOutput.YELLOW);
+            String.format("Current Price & Volume: %s / %s",
+                  df.format(currentPrice),
+                  df.format(currentVolume)
+            ),
+            ColorfulConsoleOutput.YELLOW
+      );
 
       // 스캘핑 전략을 실행하여 매수 또는 매도 결정을 내림
       executeScalpingStrategy(currentPrice, currentVolume);
@@ -105,22 +106,26 @@ public class UpbitScheduler {
    */
   @Scheduled(fixedRate = 10000) // 10초마다 실행
   public void checkTradeStatus() {
+    // 시뮬레이션 모드에서는 실행하지 않습니다.
     if (!simulationMode) {
       try {
-        // is_signed 가 null 이거나 false 인 거래 내역 추출
+        // 거래완료 체크가 되지 않은 데이터 추출
         List<Trade> tradesToCheck = tradeRepository.findByIsSignedFalseOrIsSignedIsNull();
 
+        // 거래완료 체크가 되지 않은 데이터가 없다면 스케줄러 종료
         if (tradesToCheck.isEmpty()) {
           return;
         }
 
-        // ticker_symbol 을 기준으로 그룹화
+        // 티커심볼을 기준으로 그룹화
         Map<String, List<Trade>> tradesByTicker = tradesToCheck.stream()
               .collect(Collectors.groupingBy(Trade::getTickerSymbol));
 
-        // 각 ticker_symbol 별로 처리
+        // 각 티커심볼을 기준으로 업비트에 거래완료 여부 체크
         for (Map.Entry<String, List<Trade>> entry : tradesByTicker.entrySet()) {
+          // 티커심볼
           String tickerSymbol = entry.getKey();
+          // 티커심볼 기준 거래내역
           List<Trade> trades = entry.getValue();
 
           // 식별자 목록 생성
@@ -133,13 +138,16 @@ public class UpbitScheduler {
 
           // 각 주문의 상태 확인
           for (JsonNode order : response) {
+            // 식별자
             String identifier = order.get("uuid").asText();
+            // 남은 체결량
             double remainingVolume = order.get("remaining_volume").asDouble();
 
+            // 주문수량이 모두 체결되었을 경우 모두 체결된것으로 확인
             boolean isSigned = remainingVolume == 0;
 
+            // 주문한 수량이 모두 체결되었다면 거래내역 업데이트
             if (isSigned) {
-              // 거래 내역 업데이트
               Trade trade = tradeRepository.findByIdentifier(identifier);
               if (trade != null) {
                 trade.setIsSigned(true);
@@ -159,33 +167,43 @@ public class UpbitScheduler {
    */
   private void calculateAndPrintProfit() {
     try {
+      // 매수 거래 내역 조회
       List<Trade> buyTrades = tradeRepository.findByType(TradeType.BUY.getName());
+      // 판매 거래내역 조회
       List<Trade> sellTrades = tradeRepository.findByType(TradeType.SELL.getName());
 
+      // 수익률을 모아줄 컬렉션
       List<Double> profitPercentages = new ArrayList<>();
 
+      // 구매/판매 내역을 반복하면서 수익률 계산
       while (!buyTrades.isEmpty() && !sellTrades.isEmpty()) {
+        // 가장 최근 구매내역과 가장 최근 판매내역을 매칭하여 수익률을 계산한다.
         Trade buyTrade = buyTrades.remove(0);
         Trade sellTrade = sellTrades.remove(0);
 
+        // 수익금액
         double profit = sellTrade.getPrice() - buyTrade.getPrice();
+        // 수익률
         double profitPercentage = (profit / buyTrade.getPrice()) * 100;
-
+        // 수익률 저장
         profitPercentages.add(profitPercentage);
       }
 
+      // 수익률 컬렉션이 비어있는 경우 거래내역이 없다는 메세지를 노출하고
+      // 수익률 컬렉션이 비어있지 않은 경우엔 해당 컬렉션의 모든 수익률을 평균화하여 콘솔에 노출한다.
       if (profitPercentages.isEmpty()) {
-        ColorfulConsoleOutput.printWithColor("No matched trades found.", ColorfulConsoleOutput.GREEN);
+        ColorfulConsoleOutput.printWithColor("No matched trades found.",
+              ColorfulConsoleOutput.GREEN);
       } else {
         double averageProfitPercentage = profitPercentages.stream()
               .mapToDouble(Double::doubleValue)
               .average()
               .orElse(0.0);
+
         ColorfulConsoleOutput.printWithColor(
               String.format("Average Profit Percentage: %.2f%%", averageProfitPercentage),
               ColorfulConsoleOutput.GREEN);
       }
-
     } catch (Exception e) {
       // 예외 발생 시 로그에 에러 메시지 출력
       logger.error("거래 데이터를 가져오는 중 오류 발생", e);
