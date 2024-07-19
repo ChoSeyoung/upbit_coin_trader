@@ -37,7 +37,7 @@ public class OrderRequestDto {
 
   private String identifier;
 
-  @Pattern(regexp = "^(ioc|fok)$",
+  @Pattern(regexp = "^(ioc|fok)?$",
            message = "Time in force must be either 'ioc' or 'fok'")
   private String timeInForce;
 }

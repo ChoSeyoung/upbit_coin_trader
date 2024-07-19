@@ -13,6 +13,7 @@ import my.trader.coin.repository.TradeRepository;
 import my.trader.coin.repository.UserRepository;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.strategy.ScalpingStrategy;
+import my.trader.coin.util.IdentifierGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -101,45 +102,58 @@ public class UpbitScheduler {
    */
   private void executeScalpingStrategy(double currentPrice, double currentVolume) {
     Optional<User> userOptional = userRepository.findById(1L);
+
     if (userOptional.isPresent()) {
       User user = userOptional.get();
-      if (scalpingStrategy.shouldBuy(currentPrice, currentVolume)
-            && user.getInventory() == 0) {
+      double inventory = user.getInventory(tickerSymbol);
+
+      if (scalpingStrategy.shouldBuy(currentPrice, currentVolume)) {
+        // API 호출 식별자 생성
+        String identifier =
+              IdentifierGenerator.generateUniqueIdentifier(user.getId(), TradeType.BUY.getName());
+
         // 매수 신호가 발생하면 매수 로직 실행
-        System.out.println("Simulated buying at price: " + df.format(currentPrice));
-        saveUser(TradeType.BUY.getName(), tickerSymbol,
-              TickerSymbol.getQuantityBySymbol(tickerSymbol));
-        saveTrade(TradeType.BUY.getName(), tickerSymbol, currentPrice,
-              TickerSymbol.getQuantityBySymbol(tickerSymbol), simulationMode);
-        if (!simulationMode) {
-          // 실제 업비트 매수 API 호출 예시
-          boolean buySuccess = upbitService.executeBuyOrder(tickerSymbol, currentPrice,
+        boolean buySuccess = upbitService.executeBuyOrder(tickerSymbol, currentPrice,
+              TickerSymbol.getQuantityBySymbol(tickerSymbol), identifier, simulationMode);
+
+        // 매수 주문 실행 성공 후 처리 프로세스
+        if (buySuccess) {
+          ColorfulConsoleOutput.printWithColor(
+                String.format("Successfully bought %s at price: %s", tickerSymbol,
+                      df.format(currentPrice)),
+                ColorfulConsoleOutput.RED
+          );
+
+          // 계좌정보 업데이트
+          saveUser(TradeType.BUY.getName(), tickerSymbol,
                 TickerSymbol.getQuantityBySymbol(tickerSymbol));
-          if (buySuccess) {
-            System.out.println("Successfully bought BTC at price: " + currentPrice);
-          } else {
-            logger.error("Failed to buy BTC at price: {}", currentPrice);
-          }
+          // 거래내역 업데이트
+          saveTrade(TradeType.BUY.getName(), tickerSymbol, currentPrice,
+                TickerSymbol.getQuantityBySymbol(tickerSymbol), identifier, simulationMode);
         }
-      } else if (scalpingStrategy.shouldSell(currentPrice, currentVolume)
-            && user.getInventory() > 0) {
+      } else if (scalpingStrategy.shouldSell(currentPrice, currentVolume) && inventory > 0) {
+        // API 호출 식별자 생성
+        String identifier =
+              IdentifierGenerator.generateUniqueIdentifier(user.getId(), TradeType.SELL.getName());
+
         // 매도 신호가 발생하면 매도 로직 실행
-        System.out.println("Simulated selling at price: " + df.format(currentPrice));
-        saveUser(TradeType.SELL.getName(), tickerSymbol,
-              TickerSymbol.getQuantityBySymbol(tickerSymbol));
-        saveTrade(TradeType.SELL.getName(), tickerSymbol, currentPrice,
-              TickerSymbol.getQuantityBySymbol(tickerSymbol),
-              simulationMode); // 예제에서는 0.01 BTC 매도
-        if (!simulationMode) {
-          // 실제 업비트 매도 API 호출 예시
-          boolean sellSuccess =
-                upbitService.executeSellOrder(tickerSymbol, currentPrice,
-                      TickerSymbol.getQuantityBySymbol(tickerSymbol));
-          if (sellSuccess) {
-            System.out.printf("Successfully sold %s at price: %s%n", tickerSymbol, currentPrice);
-          } else {
-            logger.error("Failed to sell {} at price: {}", tickerSymbol, currentPrice);
-          }
+        boolean sellSuccess = upbitService.executeSellOrder(tickerSymbol, currentPrice,
+              TickerSymbol.getQuantityBySymbol(tickerSymbol), identifier, simulationMode);
+
+        // 매도 주문 실행 성공 후 처리 프로세스
+        if (sellSuccess) {
+          ColorfulConsoleOutput.printWithColor(
+                String.format("Successfully sold %s at price: %s", tickerSymbol,
+                      df.format(currentPrice)),
+                ColorfulConsoleOutput.BLUE
+          );
+
+          // 계좌정보 업데이트
+          saveUser(TradeType.SELL.getName(), tickerSymbol,
+                TickerSymbol.getQuantityBySymbol(tickerSymbol));
+          // 거래내역 업데이트
+          saveTrade(TradeType.SELL.getName(), tickerSymbol, currentPrice,
+                TickerSymbol.getQuantityBySymbol(tickerSymbol), identifier, simulationMode);
         }
       }
     }
@@ -149,20 +163,23 @@ public class UpbitScheduler {
    * 거래 정보를 저장하는 메서드.
    *
    * @param type           거래 타입 (ex. BUY or SELL)
-   * @param tickerSymlbo   마켓 심볼 (ex. KRW-BTC)
+   * @param tickerSymbol   마켓 심볼 (ex. KRW-BTC)
    * @param price          거래 가격
    * @param quantity       거래 수량
+   * @param identifier     식별자
    * @param simulationMode 모의투자 여부
    */
-  private void saveTrade(String type, String tickerSymlbo, double price, double quantity,
-                         boolean simulationMode) {
+  private void saveTrade(String type, String tickerSymbol, double price, double quantity,
+                         String identifier, boolean simulationMode) {
     Trade trade = new Trade();
-    trade.setTickerSymbol(tickerSymlbo);
+    trade.setTickerSymbol(tickerSymbol);
     trade.setType(type); // 거래 타입 (매수 또는 매도)
     trade.setPrice(price); // 거래 가격
     trade.setQuantity(quantity); // 거래 수량
     trade.setTimestamp(LocalDateTime.now()); // 거래 시간
-    trade.setSimulationMode(simulationMode);
+    trade.setIdentifier(identifier); // 식별자
+    trade.setSimulationMode(simulationMode); // 시뮬레이션 모드
+    trade.setIsSigned(false); // 체결여부
     tradeRepository.save(trade); // 거래 정보를 저장소에 저장
   }
 
@@ -170,21 +187,28 @@ public class UpbitScheduler {
    * 사용자의 인벤토리를 업데이트하는 메서드.
    *
    * @param type         거래 타입 (ex. BUY or SELL)
-   * @param tickerSymlbo 마켓 심볼 (ex. KRW-BTC)
+   * @param tickerSymbol 마켓 심볼 (ex. KRW-BTC)
    * @param quantity     거래 수량
    */
-  private void saveUser(String type, String tickerSymlbo, double quantity) {
+  private void saveUser(String type, String tickerSymbol, double quantity) {
     Optional<User> userOptional = userRepository.findById(1L);
     if (userOptional.isPresent()) {
       User user = userOptional.get();
 
-      user.setSymbol(tickerSymlbo);
+      // 현재 심볼의 인벤토리 수량 가져오기
+      double currentInventory = user.getInventory(tickerSymbol);
+
+      // 거래 타입에 따라 인벤토리 업데이트
       if (TradeType.BUY.getName().equalsIgnoreCase(type)) {
-        user.setInventory(user.getInventory() + quantity);
+        currentInventory += quantity;
       } else if (TradeType.SELL.getName().equalsIgnoreCase(type)) {
-        user.setInventory(user.getInventory() - quantity);
+        currentInventory -= quantity;
       }
 
+      // 업데이트된 인벤토리 수량 저장
+      user.updateInventory(tickerSymbol, currentInventory);
+
+      // 변경된 사용자 정보 저장
       userRepository.save(user);
     }
   }

@@ -25,5 +25,7 @@ public class Trade {
   private Double price;
   private Double quantity;
   private LocalDateTime timestamp;
+  private String identifier;
   private Boolean simulationMode;
+  private Boolean isSigned;
 }
