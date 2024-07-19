@@ -3,7 +3,10 @@ package my.trader.coin.scheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import my.trader.coin.enums.ColorfulConsoleOutput;
 import my.trader.coin.enums.TickerSymbol;
 import my.trader.coin.enums.TradeType;
@@ -91,6 +94,60 @@ public class UpbitScheduler {
     } catch (Exception e) {
       // 예외 발생 시 로그에 에러 메시지 출력
       logger.error("시장 데이터를 가져오는 중 오류 발생", e);
+    }
+  }
+
+  /**
+   * 10초마다 매수/매도 주문이 정상적으로 실행되었는지 확인하고 업데이트 합니다.
+   */
+  @Scheduled(fixedRate = 10000) // 10초마다 실행
+  public void checkTradeStatus() {
+    if (!simulationMode) {
+      try {
+        // is_signed 가 null 이거나 false 인 거래 내역 추출
+        List<Trade> tradesToCheck = tradeRepository.findByIsSignedFalseOrIsSignedIsNull();
+
+        if (tradesToCheck.isEmpty()) {
+          return;
+        }
+
+        // ticker_symbol 을 기준으로 그룹화
+        Map<String, List<Trade>> tradesByTicker = tradesToCheck.stream()
+              .collect(Collectors.groupingBy(Trade::getTickerSymbol));
+
+        // 각 ticker_symbol 별로 처리
+        for (Map.Entry<String, List<Trade>> entry : tradesByTicker.entrySet()) {
+          String tickerSymbol = entry.getKey();
+          List<Trade> trades = entry.getValue();
+
+          // 식별자 목록 생성
+          List<String> identifiers = trades.stream()
+                .map(Trade::getIdentifier)
+                .collect(Collectors.toList());
+
+          // 식별자를 사용하여 API 호출
+          JsonNode response = upbitService.getOrderStatusByIds(tickerSymbol, identifiers);
+
+          // 각 주문의 상태 확인
+          for (JsonNode order : response) {
+            String identifier = order.get("uuid").asText();
+            double remainingVolume = order.get("remaining_volume").asDouble();
+
+            boolean isSigned = remainingVolume == 0;
+
+            if (isSigned) {
+              // 거래 내역 업데이트
+              Trade trade = tradeRepository.findByIdentifier(identifier);
+              if (trade != null) {
+                trade.setIsSigned(true);
+                tradeRepository.save(trade);
+              }
+            }
+          }
+        }
+      } catch (Exception e) {
+        logger.error("주문 상태를 확인하는 중 오류 발생", e);
+      }
     }
   }
 

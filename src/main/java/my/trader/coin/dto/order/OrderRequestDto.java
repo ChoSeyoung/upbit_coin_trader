@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * OrderRequestDTO 는 주문 요청을 위한 데이터 전송 객체입니다.
+ * <a href="https://docs.upbit.com/reference/%EC%A3%BC%EB%AC%B8%ED%95%98%EA%B8%B0">...</a>
  */
 @Data
 @Builder
@@ -21,7 +22,7 @@ public class OrderRequestDto {
 
   @NotNull(message = "Side is required")
   @Pattern(regexp = "^(bid|ask)$",
-           message = "Side must be either 'bid' or 'ask'")
+        message = "Side must be either 'bid' or 'ask'")
   private String side;
 
   @Positive(message = "Volume must be greater than zero")
@@ -32,12 +33,12 @@ public class OrderRequestDto {
 
   @NotNull(message = "Order type is required")
   @Pattern(regexp = "^(limit|price|market|best)$",
-           message = "Order type must be one of 'limit', 'price', 'market', or 'best'")
+        message = "Order type must be one of 'limit', 'price', 'market', or 'best'")
   private String ordType;
 
   private String identifier;
 
   @Pattern(regexp = "^(ioc|fok)?$",
-           message = "Time in force must be either 'ioc' or 'fok'")
+        message = "Time in force must be either 'ioc' or 'fok'")
   private String timeInForce;
 }

@@ -3,7 +3,13 @@ package my.trader.coin.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import my.trader.coin.dto.order.OrderRequestDto;
+import my.trader.coin.dto.order.OrderStatusRequestDto;
+import my.trader.coin.util.AuthorizationGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -16,26 +22,21 @@ import reactor.core.publisher.Mono;
  */
 @Service
 public class UpbitService {
-
-  // API KEY
-  @Value("${upbit.api.key}")
-  private String apiKey;
-
-  // API SECRET KEY
-  @Value("${upbit.secret.key}")
-  private String secretKey;
+  private static final Logger logger = LoggerFactory.getLogger(UpbitService.class);
 
   private final WebClient webClient;
   private final ObjectMapper objectMapper;
+  private final AuthorizationGenerator authorizationGenerator;
 
   /**
    * this is constructor.
    */
-  public UpbitService() {
+  public UpbitService(AuthorizationGenerator authorizationGenerator) {
     this.webClient = WebClient.builder()
-          .baseUrl("https://api.upbit.com/v1")
+          .baseUrl("https://api.upbit.com")
           .build();
     this.objectMapper = new ObjectMapper();
+    this.authorizationGenerator = authorizationGenerator;
   }
 
   /**
@@ -45,7 +46,7 @@ public class UpbitService {
    * @return JsonNode 형태의 티커 데이터
    */
   public JsonNode getTicker(String symbol) {
-    String url = String.format("/ticker?markets=%s", symbol);
+    String url = String.format("/v1/ticker?markets=%s", symbol);
     Mono<String> response = webClient.get()
           .uri(url)
           .retrieve()
@@ -99,6 +100,35 @@ public class UpbitService {
   }
 
   /**
+   * identifier 를 이용하여 현재 주문상태를 확인합니다.
+   *
+   * @param identifiers 식별자
+   * @return 주문리스트
+   */
+  public JsonNode getOrderStatusByIds(String tickerSymbol, List<String> identifiers) {
+    OrderStatusRequestDto orderStatusRequestDto = OrderStatusRequestDto.builder()
+          .market(tickerSymbol)
+          .identifiers(identifiers)
+          .build();
+
+    String authorizationHeader = authorizationGenerator.generateTokenWithParameter(orderStatusRequestDto);
+
+    return webClient.get()
+          .uri(uriBuilder -> {
+            uriBuilder.path("/v1/orders/uuids");
+            uriBuilder.queryParam("market", tickerSymbol);
+            for (String identifier : identifiers) {
+              uriBuilder.queryParam("identifiers[]", identifier);
+            }
+            return uriBuilder.build();
+          })
+          .header("Authorization", authorizationHeader)
+          .retrieve()
+          .bodyToMono(JsonNode.class)
+          .block();
+  }
+
+  /**
    * 업비트 주문하기 API 호출 공통 메서드.
    *
    * @param tickerSymbol 티커심볼
@@ -122,9 +152,11 @@ public class UpbitService {
           .identifier(identifier)
           .build();
 
+    String authorizationHeader = authorizationGenerator.generateTokenWithParameter(orderRequestDto);
     // WebClient 를 사용하여 요청을 보내고 응답을 받음
     Mono<String> response = webClient.post()
           .uri(url)
+          .header("Authorization", authorizationHeader)
           .contentType(MediaType.APPLICATION_JSON)
           .body(Mono.just(orderRequestDto), OrderRequestDto.class)
           .retrieve()
