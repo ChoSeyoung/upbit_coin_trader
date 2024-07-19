@@ -248,7 +248,6 @@ public class UpbitScheduler {
       User user = userOptional.get();
       double inventory = user.getInventory(tickerSymbol);
 
-      // 매수
       if (scalpingStrategy.shouldBuy(currentPrice, currentVolume)) {
         // API 호출 식별자 생성
         String identifier =
@@ -273,10 +272,7 @@ public class UpbitScheduler {
           saveTrade(TradeType.BUY.getName(), tickerSymbol, currentPrice,
                 TickerSymbol.getQuantityBySymbol(tickerSymbol), identifier, simulationMode);
         }
-      }
-
-      // 매도
-      if (scalpingStrategy.shouldSell(currentPrice, currentVolume) && inventory > 0) {
+      } else if (scalpingStrategy.shouldSell(currentPrice) && inventory > 0) {
         // API 호출 식별자 생성
         String identifier =
               IdentifierGenerator.generateUniqueIdentifier(user.getId(), TradeType.SELL.getName());
