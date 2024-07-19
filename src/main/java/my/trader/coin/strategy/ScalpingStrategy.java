@@ -1,7 +1,5 @@
 package my.trader.coin.strategy;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.LinkedList;
 import java.util.Queue;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,18 +15,18 @@ public class ScalpingStrategy {
   private static final int WINDOW_SIZE = 5;
 
   // 최근 가격을 저장하는 큐
-  private final Queue<BigDecimal> priceWindow = new LinkedList<>();
+  private final Queue<Double> priceWindow = new LinkedList<>();
 
   // 최근 거래량을 저장하는 큐
-  private final Queue<BigDecimal> volumeWindow = new LinkedList<>();
+  private final Queue<Double> volumeWindow = new LinkedList<>();
 
   // 손절매 및 목표 이익 비율을 설정 (수정 불가)
   @Value("${upbit.ratio.profit}")
-  private BigDecimal profitRatio;
+  private double profitRatio;
   @Value("${upbit.ratio.loss}")
-  private BigDecimal loseRatio;
+  private double loseRatio;
   // 진입 가격
-  private BigDecimal entryPrice = new BigDecimal(0);
+  private double entryPrice = 0;
 
   // 포지션 여부
   private boolean isPositionOpen = false;
@@ -40,17 +38,17 @@ public class ScalpingStrategy {
    * @param currentVolume 거래량
    * @return 매수결정시 true
    */
-  public boolean shouldBuy(BigDecimal currentPrice, BigDecimal currentVolume) {
+  public boolean shouldBuy(double currentPrice, double currentVolume) {
     // 가격 및 거래량 큐를 업데이트
     updateWindow(priceWindow, currentPrice);
     updateWindow(volumeWindow, currentVolume);
 
     // 이동 평균 가격과 거래량 계산
-    BigDecimal averagePrice = calculateAverage(priceWindow);
-    BigDecimal averageVolume = calculateAverage(volumeWindow);
+    double averagePrice = calculateAverage(priceWindow);
+    double averageVolume = calculateAverage(volumeWindow);
 
     // 매수 조건: 현재 가격이 평균 가격보다 높고, 현재 거래량이 평균 거래량보다 높을 때
-    if (currentPrice.compareTo(averagePrice) > 0 && currentVolume.compareTo(averageVolume) > 0) {
+    if (currentPrice > averagePrice && currentVolume > averageVolume) {
       // 진입 가격을 현재 가격으로 설정하고 포지션 열기
       entryPrice = currentPrice;
       isPositionOpen = true;
@@ -67,26 +65,25 @@ public class ScalpingStrategy {
    * @param currentVolume 거래량
    * @return 매도 결정시 true
    */
-  public boolean shouldSell(BigDecimal currentPrice, BigDecimal currentVolume) {
+  public boolean shouldSell(double currentPrice, double currentVolume) {
     if (priceWindow.size() < WINDOW_SIZE) {
       return false;
     }
 
-    BigDecimal averagePrice = calculateAverage(priceWindow);
-    BigDecimal averageVolume = calculateAverage(volumeWindow);
+    double averagePrice = calculateAverage(priceWindow);
+    double averageVolume = calculateAverage(volumeWindow);
 
     if (isPositionOpen) {
-      BigDecimal takeProfitPrice = entryPrice.multiply(BigDecimal.ONE.add(profitRatio));
-      BigDecimal stopLossPrice = entryPrice.multiply(BigDecimal.ONE.subtract(loseRatio));
+      double takeProfitPrice = entryPrice * (1 + profitRatio);
+      double stopLossPrice = entryPrice * (1 - loseRatio);
 
-      if (currentPrice.compareTo(takeProfitPrice) >= 0
-            || currentPrice.compareTo(stopLossPrice) <= 0) {
+      if (currentPrice >= takeProfitPrice || currentPrice <= stopLossPrice) {
         isPositionOpen = false;
         return true;
       }
     }
 
-    return currentPrice.compareTo(averagePrice) < 0 && currentVolume.compareTo(averageVolume) > 0;
+    return currentPrice < averagePrice && currentVolume > averageVolume;
   }
 
   /**
@@ -95,7 +92,7 @@ public class ScalpingStrategy {
    * @param window 창 크기
    * @param value  값
    */
-  private void updateWindow(Queue<BigDecimal> window, BigDecimal value) {
+  private void updateWindow(Queue<Double> window, double value) {
     // 큐가 설정된 창 크기보다 크면 가장 오래된 값을 제거
     if (window.size() == WINDOW_SIZE) {
       window.poll();
@@ -110,16 +107,15 @@ public class ScalpingStrategy {
    * @param window 창
    * @return 평균가
    */
-  private BigDecimal calculateAverage(Queue<BigDecimal> window) {
-    BigDecimal sum = BigDecimal.ZERO;
-    for (BigDecimal value : window) {
-      sum = sum.add(value);
+  private double calculateAverage(Queue<Double> window) {
+    double sum = 0;
+    for (Double value : window) {
+      sum += value;
     }
     if (!window.isEmpty()) {
-      return sum.divide(BigDecimal.valueOf(window.size()), 2,
-            RoundingMode.HALF_UP); // 2 decimal places, rounding mode HALF_UP
+      return Math.round((sum / window.size()) * 100.0) / 100.0; // 소수점 둘째 자리까지 반올림
     } else {
-      return BigDecimal.ZERO;
+      return 0;
     }
   }
 }

@@ -1,7 +1,6 @@
 package my.trader.coin.scheduler;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -29,7 +28,7 @@ public class UpbitScheduler {
 
   // 거래수수료
   @Value("${upbit.ratio.exchange}")
-  private BigDecimal exchangeFeePercentage;
+  private double exchangeFeePercentage;
   // 시뮬레이션 모드 플래그
   @Value("${simulation.mode}")
   private boolean simulationMode;
@@ -73,9 +72,9 @@ public class UpbitScheduler {
     try {
       // Upbit API를 통해 비트코인의 티커 데이터 가져오기
       JsonNode tickerData = upbitService.getTicker(tickerSymbol);
-      BigDecimal currentPrice = tickerData.get(0).get("trade_price").decimalValue();
-      BigDecimal currentVolume =
-            tickerData.get(0).get("acc_trade_volume_24h").decimalValue();
+      Double currentPrice = tickerData.get(0).get("trade_price").doubleValue();
+      Double currentVolume =
+            tickerData.get(0).get("acc_trade_volume_24h").doubleValue();
       ColorfulConsoleOutput.printWithColor(LocalDateTime.now().toString(),
             ColorfulConsoleOutput.YELLOW);
       ColorfulConsoleOutput.printWithColor(
@@ -86,7 +85,7 @@ public class UpbitScheduler {
             ColorfulConsoleOutput.YELLOW);
 
       // 스캘핑 전략을 실행하여 매수 또는 매도 결정을 내림
-      currentPrice = currentPrice.add(currentPrice.multiply(exchangeFeePercentage));
+      currentPrice = currentPrice + (currentPrice * exchangeFeePercentage);
       executeScalpingStrategy(currentPrice, currentVolume);
     } catch (Exception e) {
       // 예외 발생 시 로그에 에러 메시지 출력
@@ -100,7 +99,7 @@ public class UpbitScheduler {
    * @param currentPrice  자산의 현재 가격
    * @param currentVolume 자산의 현재 거래량
    */
-  private void executeScalpingStrategy(BigDecimal currentPrice, BigDecimal currentVolume) {
+  private void executeScalpingStrategy(double currentPrice, double currentVolume) {
     Optional<User> userOptional = userRepository.findById(1L);
     if (userOptional.isPresent()) {
       User user = userOptional.get();
@@ -155,7 +154,7 @@ public class UpbitScheduler {
    * @param quantity       거래 수량
    * @param simulationMode 모의투자 여부
    */
-  private void saveTrade(String type, String tickerSymlbo, BigDecimal price, double quantity,
+  private void saveTrade(String type, String tickerSymlbo, double price, double quantity,
                          boolean simulationMode) {
     Trade trade = new Trade();
     trade.setTickerSymbol(tickerSymlbo);

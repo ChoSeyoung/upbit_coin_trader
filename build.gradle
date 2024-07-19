@@ -35,6 +35,7 @@ dependencies {
     // data
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
     implementation 'org.apache.commons:commons-lang3:3.13.0'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
 
     // logging
     implementation 'org.slf4j:slf4j-api:2.0.9'
