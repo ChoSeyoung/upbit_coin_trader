@@ -181,10 +181,17 @@ public class UpbitScheduler {
         Trade buyTrade = buyTrades.remove(0);
         Trade sellTrade = sellTrades.remove(0);
 
+        Double accountedBuyPrice =
+              this.getAccountedPrice(TradeType.BUY.getName(), buyTrade.getPrice(),
+                    buyTrade.getQuantity(), buyTrade.getExchangeFee());
+        Double accountedSellPrice =
+              this.getAccountedPrice(TradeType.SELL.getName(), sellTrade.getPrice(),
+                    sellTrade.getQuantity(), sellTrade.getExchangeFee());
+
         // 수익금액
-        double profit = sellTrade.getPrice() - buyTrade.getPrice();
+        Double profit = accountedSellPrice - accountedBuyPrice;
         // 수익률
-        double profitPercentage = (profit / buyTrade.getPrice()) * 100;
+        Double profitPercentage = (profit / buyTrade.getPrice()) * 100;
         // 수익률 저장
         profitPercentages.add(profitPercentage);
       }
@@ -211,6 +218,24 @@ public class UpbitScheduler {
   }
 
   /**
+   * 매수/매도에 따른 수수료 포함된 금액을 조회.
+   *
+   * @param type             매수/매도 구분
+   * @param price            매수/매도 가격
+   * @param quantity         매수/매도 수량
+   * @param exchangeFeeRatio 거래소 수수료
+   * @return 수수료금액이 포함된 매수/매도 금액
+   */
+  private double getAccountedPrice(String type, Double price, Double quantity,
+                                   Double exchangeFeeRatio) {
+    if (type.equals(TradeType.BUY.getName())) {
+      return (price + price * exchangeFeeRatio) * quantity;
+    } else {
+      return (price - price * exchangeFeeRatio) * quantity;
+    }
+  }
+
+  /**
    * 가져온 시장 데이터를 기반으로 스캘핑 전략을 실행합니다.
    *
    * @param currentPrice  자산의 현재 가격
@@ -223,6 +248,7 @@ public class UpbitScheduler {
       User user = userOptional.get();
       double inventory = user.getInventory(tickerSymbol);
 
+      // 매수
       if (scalpingStrategy.shouldBuy(currentPrice, currentVolume)) {
         // API 호출 식별자 생성
         String identifier =
@@ -247,7 +273,10 @@ public class UpbitScheduler {
           saveTrade(TradeType.BUY.getName(), tickerSymbol, currentPrice,
                 TickerSymbol.getQuantityBySymbol(tickerSymbol), identifier, simulationMode);
         }
-      } else if (scalpingStrategy.shouldSell(currentPrice, currentVolume) && inventory > 0) {
+      }
+
+      // 매도
+      if (scalpingStrategy.shouldSell(currentPrice, currentVolume) && inventory > 0) {
         // API 호출 식별자 생성
         String identifier =
               IdentifierGenerator.generateUniqueIdentifier(user.getId(), TradeType.SELL.getName());
