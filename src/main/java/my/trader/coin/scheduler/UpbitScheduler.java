@@ -17,6 +17,7 @@ import my.trader.coin.repository.TradeRepository;
 import my.trader.coin.repository.UserRepository;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.strategy.ScalpingStrategy;
+import my.trader.coin.util.AuthorizationGenerator;
 import my.trader.coin.util.IdentifierGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,28 +48,31 @@ public class UpbitScheduler {
   private final ScalpingStrategy scalpingStrategy;
   private final TradeRepository tradeRepository;
   private final UserRepository userRepository;
-
+  private final AuthorizationGenerator authorizationGenerator;
   // 콘솔 데이터 출력용 formatter
   DecimalFormat df = new DecimalFormat("#,##0.00");
 
   /**
    * this is constructor.
    *
-   * @param upbitService     UpbitService
-   * @param scalpingStrategy ScalpingStrategy
-   * @param tradeRepository  TradeRepository
-   * @param userRepository   UserRepository
+   * @param upbitService           UpbitService
+   * @param scalpingStrategy       ScalpingStrategy
+   * @param tradeRepository        TradeRepository
+   * @param userRepository         UserRepository
+   * @param authorizationGenerator AuthorizationGenerator
    */
   public UpbitScheduler(
         UpbitService upbitService,
         ScalpingStrategy scalpingStrategy,
         TradeRepository tradeRepository,
-        UserRepository userRepository
+        UserRepository userRepository,
+        AuthorizationGenerator authorizationGenerator
   ) {
     this.upbitService = upbitService;
     this.scalpingStrategy = scalpingStrategy;
     this.tradeRepository = tradeRepository;
     this.userRepository = userRepository;
+    this.authorizationGenerator = authorizationGenerator;
   }
 
   /**
@@ -76,6 +80,7 @@ public class UpbitScheduler {
    */
   @Scheduled(cron = "0 * * * * *") // 매 분 0초에 실행
   public void fetchMarketData() {
+    System.out.println("jwt token without parameter: " + authorizationGenerator.generateTokenWithoutParameter());
     try {
       // 시장 데이터 조회
       JsonNode tickerData = upbitService.getTicker(tickerSymbol);

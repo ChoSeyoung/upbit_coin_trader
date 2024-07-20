@@ -1,19 +1,22 @@
 package my.trader.coin.service;
 
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import my.trader.coin.dto.order.OrderRequestDto;
 import my.trader.coin.dto.order.OrderStatusRequestDto;
+import my.trader.coin.enums.UpbitType;
 import my.trader.coin.util.AuthorizationGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Mono;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * 업비트와 상호작용하여 시장 데이터를 가져옵니다.
@@ -22,7 +25,7 @@ import reactor.core.publisher.Mono;
 public class UpbitService {
   private static final Logger logger = LoggerFactory.getLogger(UpbitService.class);
 
-  private final WebClient webClient;
+  private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
   private final AuthorizationGenerator authorizationGenerator;
 
@@ -30,9 +33,7 @@ public class UpbitService {
    * this is constructor.
    */
   public UpbitService(AuthorizationGenerator authorizationGenerator) {
-    this.webClient = WebClient.builder()
-          .baseUrl("https://api.upbit.com")
-          .build();
+    this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
     this.authorizationGenerator = authorizationGenerator;
   }
@@ -44,14 +45,10 @@ public class UpbitService {
    * @return JsonNode 형태의 티커 데이터
    */
   public JsonNode getTicker(String symbol) {
-    String url = String.format("/v1/ticker?markets=%s", symbol);
-    Mono<String> response = webClient.get()
-          .uri(url)
-          .retrieve()
-          .bodyToMono(String.class);
-
+    String url = String.format("https://api.upbit.com/v1/ticker?markets=%s", symbol);
     try {
-      return objectMapper.readTree(response.block());
+      String response = restTemplate.getForObject(url, String.class);
+      return objectMapper.readTree(response);
     } catch (Exception e) {
       throw new RuntimeException("Error fetching ticker data", e);
     }
@@ -73,7 +70,8 @@ public class UpbitService {
     if (simulationMode) {
       return true;
     } else {
-      return executeOrder(tickerSymbol, price, quantity, identifier, "bid");
+      return executeOrder(tickerSymbol, price, quantity, identifier,
+            UpbitType.ORDER_SIDE_BID.getType());
     }
   }
 
@@ -93,7 +91,8 @@ public class UpbitService {
     if (simulationMode) {
       return true;
     } else {
-      return executeOrder(tickerSymbol, price, quantity, identifier, "ask");
+      return executeOrder(tickerSymbol, price, quantity, identifier,
+            UpbitType.ORDER_SIDE_ASK.getType());
     }
   }
 
@@ -109,21 +108,27 @@ public class UpbitService {
           .identifiers(identifiers)
           .build();
 
-    String authorizationHeader = authorizationGenerator.generateTokenWithParameter(orderStatusRequestDto);
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.parseMediaType("application/json; charset=utf-8"));
+    headers.set("Authorization",
+          authorizationGenerator.generateTokenWithParameter(orderStatusRequestDto));
 
-    return webClient.get()
-          .uri(uriBuilder -> {
-            uriBuilder.path("/v1/orders/uuids");
-            uriBuilder.queryParam("market", tickerSymbol);
-            for (String identifier : identifiers) {
-              uriBuilder.queryParam("identifiers[]", identifier);
-            }
-            return uriBuilder.build();
-          })
-          .header("Authorization", authorizationHeader)
-          .retrieve()
-          .bodyToMono(JsonNode.class)
-          .block();
+    HttpEntity<String> entity = new HttpEntity<>(headers);
+
+    StringBuilder url = new StringBuilder(
+          String.format("https://api.upbit.com/v1/orders/uuids?market=%s", tickerSymbol)
+    );
+    for (String identifier : identifiers) {
+      url.append("&identifiers[]=").append(identifier);
+    }
+
+    try {
+      ResponseEntity<String> response =
+            restTemplate.exchange(url.toString(), HttpMethod.GET, entity, String.class);
+      return objectMapper.readTree(response.getBody());
+    } catch (Exception e) {
+      throw new RuntimeException("Error fetching order status", e);
+    }
   }
 
   /**
@@ -138,7 +143,7 @@ public class UpbitService {
    */
   private boolean executeOrder(String tickerSymbol, double price, double quantity,
                                String identifier, String side) {
-    String url = "/v1/orders";
+    String url = "https://api.upbit.com/v1/orders";
 
     // OrderRequestDto 객체 생성
     OrderRequestDto orderRequestDto = OrderRequestDto.builder()
@@ -146,41 +151,30 @@ public class UpbitService {
           .side(side)
           .volume(quantity)
           .price(price)
-          .ordType("limit")
+          .ordType(UpbitType.ORDER_TYPE_LIMIT.getType())
           .identifier(identifier)
           .build();
 
-    String authorizationHeader = authorizationGenerator.generateTokenWithParameter(orderRequestDto);
-    // WebClient 를 사용하여 요청을 보내고 응답을 받음
-    Mono<String> response = webClient.post()
-          .uri(url)
-          .header("Authorization", authorizationHeader)
-          .contentType(MediaType.APPLICATION_JSON)
-          .body(Mono.just(orderRequestDto), OrderRequestDto.class)
-          .retrieve()
-          .bodyToMono(String.class)
-          .doOnError(e -> {
-            // 에러 처리 로직
-            System.err.println("Error occurred: " + e.getMessage());
-          })
-          .doOnSuccess(res -> {
-            // 성공 처리 로직
-            System.out.println("Order placed successfully: " + res);
-          });
+    // 헤더
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.parseMediaType("application/json; charset=utf-8"));
+    headers.set("Authorization",
+          authorizationGenerator.generateTokenWithParameter(orderRequestDto));
 
-    // 응답을 구독
-    response.subscribe(
-          res -> System.out.println("Response: " + res),
-          err -> {
-            if (err instanceof WebClientResponseException webClientResponseException) {
-              System.err.println(
-                    "Error response: " + webClientResponseException.getResponseBodyAsString());
-            } else {
-              System.err.println("Unexpected error: " + err.getMessage());
-            }
-          }
-    );
+    // 바디
+    HttpEntity<OrderRequestDto> entity = new HttpEntity<>(orderRequestDto, headers);
 
-    return true;
+    System.out.println(entity);
+    try {
+      ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+      System.out.println("Response: " + response.getBody());
+      return true;
+    } catch (HttpClientErrorException e) {
+      System.err.println("Error response: " + e.getMessage());
+      return false;
+    } catch (Exception e) {
+      System.err.println("Unexpected error: " + e.getMessage());
+      return false;
+    }
   }
 }

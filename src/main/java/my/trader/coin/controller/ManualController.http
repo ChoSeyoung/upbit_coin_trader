@@ -1,0 +1,12 @@
+POST http://localhost:8080/buy
+Content-Type: application/json
+
+{
+  "user_id" : 1,
+  "ticker_symbol" : "KRW-XRP",
+  "price" : 100,
+  "quantity" : 50,
+  "simulation_mode" : false
+}
+
+###
