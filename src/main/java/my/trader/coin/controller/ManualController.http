@@ -10,10 +10,11 @@ Content-Type: application/json
 }
 
 ###
-POST http://localhost:8080/buy
+POST http://localhost:8080/order
 Content-Type: application/json
 
 {
+  "side": "bid",
   "user_id" : 1,
   "ticker_symbol" : "KRW-XRP",
   "price" : 100.0,
@@ -21,14 +22,13 @@ Content-Type: application/json
 }
 
 ###
-POST https://api.upbit.com/v1/orders
-Content-Type: application/json; charset=utf-8
-Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJxdWVyeV9oYXNoIjoiZmM5NWViNTJhYzZiNWVhOGZmZDJjMjA3NDdkMDdkMTNjMzIxYzZhNmYzZjNlMDIxMmJlYTI5ZGU0YjNkYmVlNGNmYTAyZDM3ZDRjNmYzYzU4N2U5ZDBhM2Q4OWFjNDY5NjgxODI1NjI0Njc3NWFhM2Y3ZmMyNzAxZjk4OWE3MjkiLCJhY2Nlc3Nfa2V5IjoiOXhSbUNFWlRLMTJBTUp3TTB4cHhJTllOeFpVWkV4dVlxSHRPeFdLTyIsInF1ZXJ5X2hhc2hfYWxnIjoiU0hBNTEyIiwibm9uY2UiOiJjN2FiOWU2Zi1hN2E0LTRlYmQtYWI5NS1mYzAzYjNiNWFmMjIifQ.g5mDX2D8GfKM8dLSOSU66T-63EK7PyjLbH84gy0FND4
+POST http://localhost:8080/order
+Content-Type: application/json
 
 {
-  "market": "KRW-XRP",
-  "side": "bid",
-  "volume": 50.0,
-  "price": 100.0,
-  "ordType": "limit"
+  "side": "ask",
+  "user_id" : 1,
+  "ticker_symbol" : "KRW-XRP",
+  "price" : 1000.0,
+  "quantity" : 50.0
 }

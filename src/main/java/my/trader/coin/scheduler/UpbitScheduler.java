@@ -51,10 +51,10 @@ public class UpbitScheduler {
   /**
    * this is constructor.
    *
-   * @param upbitService           UpbitService
-   * @param scalpingStrategy       ScalpingStrategy
-   * @param tradeRepository        TradeRepository
-   * @param userRepository         UserRepository
+   * @param upbitService     UpbitService
+   * @param scalpingStrategy ScalpingStrategy
+   * @param tradeRepository  TradeRepository
+   * @param userRepository   UserRepository
    */
   public UpbitScheduler(
         UpbitService upbitService,
@@ -74,36 +74,37 @@ public class UpbitScheduler {
   @Scheduled(cron = "0 * * * * *") // 매 분 0초에 실행
   public void fetchMarketData() {
     try {
-      ArrayList<String> markets = new ArrayList<>(List.of("KRW-XRP"));
+      List<String> markets = new ArrayList<>(List.of(tickerSymbol));
 
       // 시장 데이터 조회
       List<TickerResponseDto> tickerDataList = upbitService.getTicker(markets);
 
       // 첫 번째 티커 데이터를 사용
       if (tickerDataList != null && !tickerDataList.isEmpty()) {
-        TickerResponseDto tickerData = tickerDataList.get(0);
+        for (TickerResponseDto tickerData : tickerDataList) {
+          // 현재 가격
+          Double currentPrice = tickerData.getTradePrice();
+          // 현재 거래량
+          Double currentVolume = tickerData.getAccTradeVolume24h();
 
-        // 현재 가격
-        Double currentPrice = tickerData.getTradePrice();
-        // 현재 거래량
-        Double currentVolume = tickerData.getAccTradeVolume24h();
+          // 현재 가격 및 거래량 로깅
+          ColorfulConsoleOutput.printWithColor(
+                String.format("[%s] Current Price & Volume: %s / %s",
+                      tickerData.getMarket(),
+                      df.format(currentPrice),
+                      df.format(currentVolume)
+                ),
+                ColorfulConsoleOutput.YELLOW
+          );
 
-        // 현재 가격 및 거래량 로깅
-        ColorfulConsoleOutput.printWithColor(
-              String.format("Current Price & Volume: %s / %s",
-                    df.format(currentPrice),
-                    df.format(currentVolume)
-              ),
-              ColorfulConsoleOutput.YELLOW
-        );
+          // 스캘핑 전략을 실행하여 매수 또는 매도 결정을 내림
+          executeScalpingStrategy(currentPrice, currentVolume);
 
-        // 스캘핑 전략을 실행하여 매수 또는 매도 결정을 내림
-        executeScalpingStrategy(currentPrice, currentVolume);
-
-        // 현재 수익률 조회 및 로깅
-        calculateAndPrintProfit();
+          // 현재 수익률 조회 및 로깅
+          calculateAndPrintProfit();
+        }
       } else {
-        throw new RuntimeException("No ticker data found");
+        throw new Exception("시세 현재가 내용 없음");
       }
     } catch (Exception e) {
       // 예외 발생 시 로그에 에러 메시지 출력
@@ -144,7 +145,8 @@ public class UpbitScheduler {
                 .collect(Collectors.toList());
 
           // 식별자를 사용하여 API 호출
-          List<OrderStatusResponseDto> response = upbitService.getOrderStatusByIds(tickerSymbol, identifiers);
+          List<OrderStatusResponseDto> response =
+                upbitService.getOrderStatusByIds(tickerSymbol, identifiers);
 
           // 각 주문의 상태 확인
           for (OrderStatusResponseDto order : response) {

@@ -1,7 +1,5 @@
 package my.trader.coin.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -16,12 +14,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class Sejong {
-  private final ObjectMapper objectMapper;
-
-  public Sejong(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
-  }
-
   /**
    * 카멜 케이스를 스네이크 케이스로 변환.
    *

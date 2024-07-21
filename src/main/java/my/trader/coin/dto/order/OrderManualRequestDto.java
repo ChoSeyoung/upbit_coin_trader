@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class OrderManualRequestDto {
   private Long userId;
+  private String side;
   private String tickerSymbol;
   private Double price;
   private Double quantity;

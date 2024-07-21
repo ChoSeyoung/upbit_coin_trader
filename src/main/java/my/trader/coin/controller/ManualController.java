@@ -3,6 +3,7 @@ package my.trader.coin.controller;
 import java.util.Map;
 import my.trader.coin.dto.order.OrderManualRequestDto;
 import my.trader.coin.dto.order.OrderResponseDto;
+import my.trader.coin.enums.UpbitType;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.util.AuthorizationGenerator;
 import org.springframework.web.bind.annotation.*;
@@ -38,14 +39,23 @@ public class ManualController {
   }
 
   /**
-   * 매수 수동 조작.
+   * 매수/매도 수동 조작.
    */
-  @PostMapping("/buy")
+  @PostMapping("/order")
   public OrderResponseDto buy(@RequestBody OrderManualRequestDto orderManualRequestDto) {
-    return upbitService.executeBuyOrder(
-          orderManualRequestDto.getTickerSymbol(),
-          orderManualRequestDto.getPrice(),
-          orderManualRequestDto.getQuantity()
-    );
+    if (orderManualRequestDto.getSide().equals(UpbitType.ORDER_SIDE_BID.getType())) {
+      return upbitService.executeBuyOrder(
+            orderManualRequestDto.getTickerSymbol(),
+            orderManualRequestDto.getPrice(),
+            orderManualRequestDto.getQuantity()
+      );
+    } else {
+      return upbitService.executeSellOrder(
+            orderManualRequestDto.getTickerSymbol(),
+            orderManualRequestDto.getPrice(),
+            orderManualRequestDto.getQuantity()
+      );
+    }
+
   }
 }

@@ -2,6 +2,7 @@ package my.trader.coin.service;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
@@ -9,16 +10,15 @@ import java.util.List;
 import my.trader.coin.dto.order.*;
 import my.trader.coin.enums.UpbitType;
 import my.trader.coin.util.AuthorizationGenerator;
+import my.trader.coin.util.Sejong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
@@ -28,18 +28,23 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class UpbitService {
   private static final Logger logger = LoggerFactory.getLogger(UpbitService.class);
 
+  private final WebClient webClient;
   private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
   private final AuthorizationGenerator authorizationGenerator;
+  private final Sejong sejong;
 
   /**
    * this is constructor.
    */
-  public UpbitService(AuthorizationGenerator authorizationGenerator) {
+  public UpbitService(WebClient.Builder webClientBuilder,
+                      AuthorizationGenerator authorizationGenerator, Sejong sejong) {
+    this.webClient = webClientBuilder.build();
     this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
     this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     this.authorizationGenerator = authorizationGenerator;
+    this.sejong = sejong;
   }
 
   /**
@@ -70,11 +75,16 @@ public class UpbitService {
 
       // 요청 보내기
       HttpEntity<?> entity = new HttpEntity<>(headers);
-      ResponseEntity<List<TickerResponseDto>> response = restTemplate.exchange(
-            uri, HttpMethod.POST, entity, new ParameterizedTypeReference<>() {
-            });
+      ResponseEntity<String> response = restTemplate.exchange(
+            uri, HttpMethod.GET, entity, String.class);
 
-      result = response.getBody();
+      // JSON 문자열을 TickerResponseDto 리스트로 변환
+      if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+        String json = response.getBody();
+        CollectionType javaType = objectMapper.getTypeFactory()
+              .constructCollectionType(List.class, TickerResponseDto.class);
+        result = objectMapper.readValue(json, javaType);
+      }
     } catch (HttpClientErrorException e) {
       System.err.println("Error response: " + e.getMessage());
     } catch (Exception e) {
@@ -152,11 +162,16 @@ public class UpbitService {
 
       // 요청 보내기
       HttpEntity<?> entity = new HttpEntity<>(headers);
-      ResponseEntity<List<OrderStatusResponseDto>> response = restTemplate.exchange(
-            uri, HttpMethod.POST, entity, new ParameterizedTypeReference<>() {
-            });
+      ResponseEntity<String> response = restTemplate.exchange(
+            uri, HttpMethod.POST, entity, String.class);
 
-      result = response.getBody();
+      // JSON 문자열을 OrderStatusResponseDto 리스트로 변환
+      if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+        String json = response.getBody();
+        CollectionType javaType = objectMapper.getTypeFactory()
+              .constructCollectionType(List.class, OrderStatusResponseDto.class);
+        result = objectMapper.readValue(json, javaType);
+      }
     } catch (HttpClientErrorException e) {
       System.err.println("Error response: " + e.getMessage());
     } catch (Exception e) {
@@ -175,10 +190,7 @@ public class UpbitService {
    * @param side         매수/매도 결정 타입
    * @return 매수/매도 성공시 true 응답
    */
-  private OrderResponseDto executeOrder(String tickerSymbol, double price, double quantity,
-                                        String side) {
-    OrderResponseDto result = new OrderResponseDto();
-
+  public OrderResponseDto executeOrder(String tickerSymbol, double price, double quantity, String side) {
     String url = "https://api.upbit.com/v1/orders";
 
     // OrderRequestDto 객체 생성
@@ -190,39 +202,36 @@ public class UpbitService {
           .ordType(UpbitType.ORDER_TYPE_LIMIT.getType())
           .build();
 
-    // 헤더
-    HttpHeaders headers = new HttpHeaders();
-    headers.set("Content-Type", "application/json; charset=utf-8");
-    headers.set("Authorization",
-          authorizationGenerator.generateTokenWithParameter(orderRequestDto));
+    // 헤더 설정
+    String authorizationToken = authorizationGenerator.generateTokenWithParameter(orderRequestDto);
 
-    // 파라미터를 URL에 추가
+    // URL 파라미터 추가
     UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(url);
-    try {
-      // OrderRequestDto 객체의 필드를 읽어 URI 빌더에 추가
-      Field[] fields = orderRequestDto.getClass().getDeclaredFields();
-      for (Field field : fields) {
-        field.setAccessible(true);
-        Object value = field.get(orderRequestDto);
-        if (value != null) {
-          uriBuilder.queryParam(field.getName(), value.toString());
-        }
+    Field[] fields = orderRequestDto.getClass().getDeclaredFields();
+    for (Field field : fields) {
+      field.setAccessible(true);
+      Object value;
+      try {
+        value = field.get(orderRequestDto);
+      } catch (IllegalAccessException e) {
+        throw new RuntimeException(e.getMessage());
       }
-
-      // URI 생성
-      URI uri = uriBuilder.build().encode().toUri();
-
-      // 요청 보내기
-      HttpEntity<?> entity = new HttpEntity<>(headers);
-      ResponseEntity<OrderResponseDto> response =
-            restTemplate.exchange(uri, HttpMethod.POST, entity, OrderResponseDto.class);
-
-      result = response.getBody();
-    } catch (HttpClientErrorException e) {
-      System.err.println("Error response: " + e.getMessage());
-    } catch (Exception e) {
-      System.err.println("Unexpected error: " + e.getMessage());
+      if (value != null) {
+        uriBuilder.queryParam(sejong.camelToSnakeCase(field.getName()), value);
+      }
     }
+
+    // URI 생성
+    URI uri = uriBuilder.build().encode().toUri();
+
+    // WebClient를 사용하여 비동기적으로 요청 보내기
+    OrderResponseDto result = webClient.post()
+          .uri(uri)
+          .header("Content-Type", "application/json; charset=utf-8")
+          .header("Authorization", authorizationToken)
+          .retrieve()
+          .bodyToMono(OrderResponseDto.class)
+          .block();
 
     return result;
   }
