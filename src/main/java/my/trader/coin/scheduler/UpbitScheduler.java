@@ -1,13 +1,12 @@
 package my.trader.coin.scheduler;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
+import my.trader.coin.dto.order.OrderResponseDto;
+import my.trader.coin.dto.order.OrderStatusResponseDto;
+import my.trader.coin.dto.order.TickerResponseDto;
 import my.trader.coin.enums.ColorfulConsoleOutput;
 import my.trader.coin.enums.TickerSymbol;
 import my.trader.coin.enums.TradeType;
@@ -17,8 +16,6 @@ import my.trader.coin.repository.TradeRepository;
 import my.trader.coin.repository.UserRepository;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.strategy.ScalpingStrategy;
-import my.trader.coin.util.AuthorizationGenerator;
-import my.trader.coin.util.IdentifierGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,7 +45,6 @@ public class UpbitScheduler {
   private final ScalpingStrategy scalpingStrategy;
   private final TradeRepository tradeRepository;
   private final UserRepository userRepository;
-  private final AuthorizationGenerator authorizationGenerator;
   // 콘솔 데이터 출력용 formatter
   DecimalFormat df = new DecimalFormat("#,##0.00");
 
@@ -59,20 +55,17 @@ public class UpbitScheduler {
    * @param scalpingStrategy       ScalpingStrategy
    * @param tradeRepository        TradeRepository
    * @param userRepository         UserRepository
-   * @param authorizationGenerator AuthorizationGenerator
    */
   public UpbitScheduler(
         UpbitService upbitService,
         ScalpingStrategy scalpingStrategy,
         TradeRepository tradeRepository,
-        UserRepository userRepository,
-        AuthorizationGenerator authorizationGenerator
+        UserRepository userRepository
   ) {
     this.upbitService = upbitService;
     this.scalpingStrategy = scalpingStrategy;
     this.tradeRepository = tradeRepository;
     this.userRepository = userRepository;
-    this.authorizationGenerator = authorizationGenerator;
   }
 
   /**
@@ -80,28 +73,38 @@ public class UpbitScheduler {
    */
   @Scheduled(cron = "0 * * * * *") // 매 분 0초에 실행
   public void fetchMarketData() {
-    System.out.println("jwt token without parameter: " + authorizationGenerator.generateTokenWithoutParameter());
     try {
+      ArrayList<String> markets = new ArrayList<>(List.of("KRW-XRP"));
+
       // 시장 데이터 조회
-      JsonNode tickerData = upbitService.getTicker(tickerSymbol);
-      // 현재 가격
-      Double currentPrice = tickerData.get(0).get("trade_price").doubleValue();
-      // 현재 거래량
-      Double currentVolume = tickerData.get(0).get("acc_trade_volume_24h").doubleValue();
-      // 현재 가격 및 거래량 로깅
-      ColorfulConsoleOutput.printWithColor(
-            String.format("Current Price & Volume: %s / %s",
-                  df.format(currentPrice),
-                  df.format(currentVolume)
-            ),
-            ColorfulConsoleOutput.YELLOW
-      );
+      List<TickerResponseDto> tickerDataList = upbitService.getTicker(markets);
 
-      // 스캘핑 전략을 실행하여 매수 또는 매도 결정을 내림
-      executeScalpingStrategy(currentPrice, currentVolume);
+      // 첫 번째 티커 데이터를 사용
+      if (tickerDataList != null && !tickerDataList.isEmpty()) {
+        TickerResponseDto tickerData = tickerDataList.get(0);
 
-      // 현재 수익률 조회 및 로깅
-      calculateAndPrintProfit();
+        // 현재 가격
+        Double currentPrice = tickerData.getTradePrice();
+        // 현재 거래량
+        Double currentVolume = tickerData.getAccTradeVolume24h();
+
+        // 현재 가격 및 거래량 로깅
+        ColorfulConsoleOutput.printWithColor(
+              String.format("Current Price & Volume: %s / %s",
+                    df.format(currentPrice),
+                    df.format(currentVolume)
+              ),
+              ColorfulConsoleOutput.YELLOW
+        );
+
+        // 스캘핑 전략을 실행하여 매수 또는 매도 결정을 내림
+        executeScalpingStrategy(currentPrice, currentVolume);
+
+        // 현재 수익률 조회 및 로깅
+        calculateAndPrintProfit();
+      } else {
+        throw new RuntimeException("No ticker data found");
+      }
     } catch (Exception e) {
       // 예외 발생 시 로그에 에러 메시지 출력
       logger.error("시장 데이터를 가져오는 중 오류 발생", e);
@@ -141,14 +144,14 @@ public class UpbitScheduler {
                 .collect(Collectors.toList());
 
           // 식별자를 사용하여 API 호출
-          JsonNode response = upbitService.getOrderStatusByIds(tickerSymbol, identifiers);
+          List<OrderStatusResponseDto> response = upbitService.getOrderStatusByIds(tickerSymbol, identifiers);
 
           // 각 주문의 상태 확인
-          for (JsonNode order : response) {
+          for (OrderStatusResponseDto order : response) {
             // 식별자
-            String identifier = order.get("uuid").asText();
+            String identifier = order.getUuid();
             // 남은 체결량
-            double remainingVolume = order.get("remaining_volume").asDouble();
+            double remainingVolume = order.getRemainingVolume();
 
             // 주문수량이 모두 체결되었을 경우 모두 체결된것으로 확인
             boolean isSigned = remainingVolume == 0;
@@ -256,16 +259,12 @@ public class UpbitScheduler {
       double inventory = user.getInventory(tickerSymbol);
 
       if (scalpingStrategy.shouldBuy(currentPrice, currentVolume)) {
-        // API 호출 식별자 생성
-        String identifier =
-              IdentifierGenerator.generateUniqueIdentifier(user.getId(), TradeType.BUY.getName());
-
         // 매수 신호가 발생하면 매수 로직 실행
-        boolean buySuccess = upbitService.executeBuyOrder(tickerSymbol, currentPrice,
-              TickerSymbol.getQuantityBySymbol(tickerSymbol), identifier, simulationMode);
+        OrderResponseDto result = upbitService.executeBuyOrder(tickerSymbol, currentPrice,
+              TickerSymbol.getQuantityBySymbol(tickerSymbol));
 
         // 매수 주문 실행 성공 후 처리 프로세스
-        if (buySuccess) {
+        if (result != null) {
           ColorfulConsoleOutput.printWithColor(
                 String.format("Successfully bought %s at price: %s", tickerSymbol,
                       df.format(currentPrice)),
@@ -277,19 +276,15 @@ public class UpbitScheduler {
                 TickerSymbol.getQuantityBySymbol(tickerSymbol));
           // 거래내역 업데이트
           saveTrade(TradeType.BUY.getName(), tickerSymbol, currentPrice,
-                TickerSymbol.getQuantityBySymbol(tickerSymbol), identifier, simulationMode);
+                TickerSymbol.getQuantityBySymbol(tickerSymbol), result.getUuid(), simulationMode);
         }
       } else if (scalpingStrategy.shouldSell(currentPrice) && inventory > 0) {
-        // API 호출 식별자 생성
-        String identifier =
-              IdentifierGenerator.generateUniqueIdentifier(user.getId(), TradeType.SELL.getName());
-
         // 매도 신호가 발생하면 매도 로직 실행
-        boolean sellSuccess = upbitService.executeSellOrder(tickerSymbol, currentPrice,
-              TickerSymbol.getQuantityBySymbol(tickerSymbol), identifier, simulationMode);
+        OrderResponseDto result = upbitService.executeSellOrder(tickerSymbol, currentPrice,
+              TickerSymbol.getQuantityBySymbol(tickerSymbol));
 
         // 매도 주문 실행 성공 후 처리 프로세스
-        if (sellSuccess) {
+        if (result != null) {
           ColorfulConsoleOutput.printWithColor(
                 String.format("Successfully sold %s at price: %s", tickerSymbol,
                       df.format(currentPrice)),
@@ -301,7 +296,7 @@ public class UpbitScheduler {
                 TickerSymbol.getQuantityBySymbol(tickerSymbol));
           // 거래내역 업데이트
           saveTrade(TradeType.SELL.getName(), tickerSymbol, currentPrice,
-                TickerSymbol.getQuantityBySymbol(tickerSymbol), identifier, simulationMode);
+                TickerSymbol.getQuantityBySymbol(tickerSymbol), result.getUuid(), simulationMode);
         }
       }
     }

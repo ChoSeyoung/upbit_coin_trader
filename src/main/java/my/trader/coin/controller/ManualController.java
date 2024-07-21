@@ -1,12 +1,11 @@
 package my.trader.coin.controller;
 
+import java.util.Map;
 import my.trader.coin.dto.order.OrderManualRequestDto;
-import my.trader.coin.enums.TradeType;
+import my.trader.coin.dto.order.OrderResponseDto;
 import my.trader.coin.service.UpbitService;
-import my.trader.coin.util.IdentifierGenerator;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import my.trader.coin.util.AuthorizationGenerator;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 매수/매도 등 거래소에서 사용할 수 있는 기능을 수동 조작할 수 있게 해주는 컨트롤러.
@@ -14,26 +13,39 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class ManualController {
   private final UpbitService upbitService;
+  private final AuthorizationGenerator authorizationGenerator;
 
-  public ManualController(UpbitService upbitService) {
+  public ManualController(UpbitService upbitService,
+                          AuthorizationGenerator authorizationGenerator) {
     this.upbitService = upbitService;
+    this.authorizationGenerator = authorizationGenerator;
+  }
+
+  /**
+   * jwt 발급.
+   *
+   * @param requestBody 파라미터
+   * @return jwt
+   */
+  @PostMapping("/jwt")
+  public String getJwtWithParameter(
+        @RequestBody(required = false) Map<String, Object> requestBody) {
+    if (requestBody == null) {
+      return authorizationGenerator.generateTokenWithoutParameter();
+    } else {
+      return authorizationGenerator.generateTokenWithParameter(requestBody);
+    }
   }
 
   /**
    * 매수 수동 조작.
    */
   @PostMapping("/buy")
-  public boolean buy(@RequestBody OrderManualRequestDto orderManualRequestDto) {
-    Long userId = orderManualRequestDto.getUserId();
-
-    String identifier = IdentifierGenerator.generateUniqueIdentifier(userId, TradeType.BUY.getName());
-
+  public OrderResponseDto buy(@RequestBody OrderManualRequestDto orderManualRequestDto) {
     return upbitService.executeBuyOrder(
           orderManualRequestDto.getTickerSymbol(),
           orderManualRequestDto.getPrice(),
-          orderManualRequestDto.getQuantity(),
-          identifier,
-          orderManualRequestDto.getSimulationMode()
+          orderManualRequestDto.getQuantity()
     );
   }
 }

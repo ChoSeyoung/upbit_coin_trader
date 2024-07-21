@@ -27,6 +27,12 @@ public class AuthorizationGenerator {
   @Value("${upbit.secret.key}")
   private String secretKey;
 
+  private final Sejong sejong;
+
+  public AuthorizationGenerator(Sejong sejong) {
+    this.sejong = sejong;
+  }
+
   /**
    * 파라미터가 없을 경우 Authorization 값 조회.
    *
@@ -44,7 +50,7 @@ public class AuthorizationGenerator {
   }
 
   /**
-   * 라미터가 있을 경우 Authorization 값 조회.
+   * 파라미터가 있을 경우 Authorization 값 조회.
    *
    * @return Bearer ${Authorization}
    */
@@ -52,15 +58,13 @@ public class AuthorizationGenerator {
     String jwtToken = null;
 
     try {
-      String queryString = Sejong.createQueryString(dto);
-      System.out.println("Query String: " + queryString);
+      String queryString = sejong.createQueryString(dto);
 
       MessageDigest md = MessageDigest.getInstance("SHA-512");
       md.update(queryString.getBytes(StandardCharsets.UTF_8));
 
       byte[] digest = md.digest();
       String queryHash = String.format("%0128x", new BigInteger(1, digest));
-      System.out.println("Query Hash: " + queryHash);
 
       Algorithm algorithm = Algorithm.HMAC256(secretKey);
       jwtToken = JWT.create()
