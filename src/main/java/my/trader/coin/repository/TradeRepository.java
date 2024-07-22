@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface TradeRepository extends JpaRepository<Trade, Long> {
-  List<Trade> findByIsSignedFalseOrIsSignedIsNull();
+  List<Trade> findBySimulationModeFalseAndIsSignedFalseOrIsSignedIsNull();
 
   List<Trade> findByType(String type);
 

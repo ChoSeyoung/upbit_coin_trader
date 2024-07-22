@@ -32,7 +32,6 @@ public class UpbitService {
   private static final Logger logger = LoggerFactory.getLogger(UpbitService.class);
 
   private final WebClient webClient;
-  private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
   private final AuthorizationGenerator authorizationGenerator;
   private final Sejong sejong;
@@ -43,7 +42,6 @@ public class UpbitService {
   public UpbitService(WebClient.Builder webClientBuilder,
                       AuthorizationGenerator authorizationGenerator, Sejong sejong) {
     this.webClient = webClientBuilder.build();
-    this.restTemplate = new RestTemplate();
     this.objectMapper = new ObjectMapper();
     this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     this.authorizationGenerator = authorizationGenerator;

@@ -14,7 +14,7 @@ public enum TickerSymbol {
   // 이더리움
   KRW_ETH("KRW-ETH", 0.1),
   // 리플
-  KRW_XRP("KRW-XRP", 51);
+  KRW_XRP("KRW-XRP", 10);
 
   private final String symbol;
   private final double quantity;

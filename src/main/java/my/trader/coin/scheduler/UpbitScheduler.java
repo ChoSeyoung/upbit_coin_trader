@@ -115,64 +115,64 @@ public class UpbitScheduler {
   /**
    * 10초마다 매수/매도 주문이 정상적으로 실행되었는지 확인하고 업데이트 합니다.
    */
-  @Scheduled(fixedRate = 10000) // 10초마다 실행
-  public void checkTradeStatus() {
-    // 시뮬레이션 모드에서는 실행하지 않습니다.
-    if (!simulationMode) {
-      try {
-        // 거래완료 체크가 되지 않은 데이터 추출
-        List<Trade> tradesToCheck = tradeRepository.findByIsSignedFalseOrIsSignedIsNull();
-
-        // 거래완료 체크가 되지 않은 데이터가 없다면 스케줄러 종료
-        if (tradesToCheck.isEmpty()) {
-          return;
-        }
-
-        // 티커심볼을 기준으로 그룹화
-        Map<String, List<Trade>> tradesByTicker = tradesToCheck.stream()
-              .collect(Collectors.groupingBy(Trade::getTickerSymbol));
-
-        // 각 티커심볼을 기준으로 업비트에 거래완료 여부 체크
-        for (Map.Entry<String, List<Trade>> entry : tradesByTicker.entrySet()) {
-          // 티커심볼
-          String tickerSymbol = entry.getKey();
-          // 티커심볼 기준 거래내역
-          List<Trade> trades = entry.getValue();
-
-          // 식별자 목록 생성
-          List<String> identifiers = trades.stream()
-                .map(Trade::getIdentifier)
-                .collect(Collectors.toList());
-
-          // 식별자를 사용하여 API 호출
-          List<OrderStatusResponseDto> response =
-                upbitService.getOrderStatusByIds(tickerSymbol, identifiers);
-
-          // 각 주문의 상태 확인
-          for (OrderStatusResponseDto order : response) {
-            // 식별자
-            String identifier = order.getUuid();
-            // 남은 체결량
-            double remainingVolume = order.getRemainingVolume();
-
-            // 주문수량이 모두 체결되었을 경우 모두 체결된것으로 확인
-            boolean isSigned = remainingVolume == 0;
-
-            // 주문한 수량이 모두 체결되었다면 거래내역 업데이트
-            if (isSigned) {
-              Trade trade = tradeRepository.findByIdentifier(identifier);
-              if (trade != null) {
-                trade.setIsSigned(true);
-                tradeRepository.save(trade);
-              }
-            }
-          }
-        }
-      } catch (Exception e) {
-        logger.error("주문 상태를 확인하는 중 오류 발생", e);
-      }
-    }
-  }
+//  @Scheduled(fixedRate = 10000) // 10초마다 실행
+//  public void checkTradeStatus() {
+//    // 시뮬레이션 모드에서는 실행하지 않습니다.
+//    if (!simulationMode) {
+//      try {
+//        // 거래완료 체크가 되지 않은 데이터 추출
+//        List<Trade> tradesToCheck = tradeRepository.findBySimulationModeFalseAndIsSignedFalseOrIsSignedIsNull();
+//
+//        // 거래완료 체크가 되지 않은 데이터가 없다면 스케줄러 종료
+//        if (tradesToCheck.isEmpty()) {
+//          return;
+//        }
+//
+//        // 티커심볼을 기준으로 그룹화
+//        Map<String, List<Trade>> tradesByTicker = tradesToCheck.stream()
+//              .collect(Collectors.groupingBy(Trade::getTickerSymbol));
+//
+//        // 각 티커심볼을 기준으로 업비트에 거래완료 여부 체크
+//        for (Map.Entry<String, List<Trade>> entry : tradesByTicker.entrySet()) {
+//          // 티커심볼
+//          String tickerSymbol = entry.getKey();
+//          // 티커심볼 기준 거래내역
+//          List<Trade> trades = entry.getValue();
+//
+//          // 식별자 목록 생성
+//          List<String> identifiers = trades.stream()
+//                .map(Trade::getIdentifier)
+//                .collect(Collectors.toList());
+//
+//          // 식별자를 사용하여 API 호출
+//          List<OrderStatusResponseDto> response =
+//                upbitService.getOrderStatusByIds(tickerSymbol, identifiers);
+//
+//          // 각 주문의 상태 확인
+//          for (OrderStatusResponseDto order : response) {
+//            // 식별자
+//            String identifier = order.getUuid();
+//            // 남은 체결량
+//            double remainingVolume = order.getRemainingVolume();
+//
+//            // 주문수량이 모두 체결되었을 경우 모두 체결된것으로 확인
+//            boolean isSigned = remainingVolume == 0;
+//
+//            // 주문한 수량이 모두 체결되었다면 거래내역 업데이트
+//            if (isSigned) {
+//              Trade trade = tradeRepository.findByIdentifier(identifier);
+//              if (trade != null) {
+//                trade.setIsSigned(true);
+//                tradeRepository.save(trade);
+//              }
+//            }
+//          }
+//        }
+//      } catch (Exception e) {
+//        logger.error("주문 상태를 확인하는 중 오류 발생", e);
+//      }
+//    }
+//  }
 
   /**
    * 수익률 조회하여 콘솔에 로깅.

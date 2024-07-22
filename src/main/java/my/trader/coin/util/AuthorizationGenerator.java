@@ -59,7 +59,6 @@ public class AuthorizationGenerator {
 
     try {
       String queryString = sejong.createQueryString(dto);
-      System.out.println("Query String: " + queryString);
 
       MessageDigest md = MessageDigest.getInstance("SHA-512");
       md.update(queryString.getBytes(StandardCharsets.UTF_8));
@@ -76,7 +75,6 @@ public class AuthorizationGenerator {
             .sign(algorithm);
 
       jwtToken = "Bearer " + jwtToken;
-      System.out.println("JWT Token: " + jwtToken);
     } catch (NoSuchAlgorithmException e) {
       logger.error("암호화 알고리즘을 찾을 수 없는 오류 발생", e);
     }
