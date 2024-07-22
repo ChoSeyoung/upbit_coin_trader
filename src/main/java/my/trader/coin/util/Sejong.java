@@ -65,6 +65,7 @@ public class Sejong {
 
     return params.entrySet()
           .stream()
+          .sorted(Map.Entry.comparingByKey()) // 키를 기준으로 오름차순 정렬
           .map(entry -> entry.getKey() + "=" + entry.getValue())
           .collect(Collectors.joining("&"));
   }

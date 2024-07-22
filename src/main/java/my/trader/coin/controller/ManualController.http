@@ -30,5 +30,5 @@ Content-Type: application/json
   "user_id" : 1,
   "ticker_symbol" : "KRW-XRP",
   "price" : 1000.0,
-  "quantity" : 50.0
+  "quantity" : 26.0
 }

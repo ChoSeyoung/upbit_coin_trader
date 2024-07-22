@@ -7,6 +7,8 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import my.trader.coin.dto.order.*;
 import my.trader.coin.enums.UpbitType;
 import my.trader.coin.util.AuthorizationGenerator;
@@ -20,6 +22,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 
 /**
  * 업비트와 상호작용하여 시장 데이터를 가져옵니다.
@@ -54,44 +57,38 @@ public class UpbitService {
    * @return JsonNode 형태의 티커 데이터
    */
   public List<TickerResponseDto> getTicker(List<String> markets) {
-    List<TickerResponseDto> result = new ArrayList<>();
-
     String url = "https://api.upbit.com/v1/ticker";
-
-    // TickerRequestDto 객체 생성
-    TickerRequestDto tickerRequestDto = new TickerRequestDto();
-    tickerRequestDto.setMarkets(markets);
-
-    // 헤더
-    HttpHeaders headers = new HttpHeaders();
-    headers.set("Content-Type", "application/json; charset=utf-8");
 
     // URL에 쿼리 파라미터 추가
     UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(url)
           .queryParam("markets", String.join(",", markets));
-    try {
-      // URI 생성
-      URI uri = uriBuilder.build().encode().toUri();
 
-      // 요청 보내기
-      HttpEntity<?> entity = new HttpEntity<>(headers);
-      ResponseEntity<String> response = restTemplate.exchange(
-            uri, HttpMethod.GET, entity, String.class);
+    // URI 생성
+    URI uri = uriBuilder.build().encode().toUri();
 
-      // JSON 문자열을 TickerResponseDto 리스트로 변환
-      if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-        String json = response.getBody();
-        CollectionType javaType = objectMapper.getTypeFactory()
-              .constructCollectionType(List.class, TickerResponseDto.class);
-        result = objectMapper.readValue(json, javaType);
-      }
-    } catch (HttpClientErrorException e) {
-      System.err.println("Error response: " + e.getMessage());
-    } catch (Exception e) {
-      System.err.println("Unexpected error: " + e.getMessage());
-    }
-
-    return result;
+    // WebClient를 사용하여 비동기적으로 요청 보내기
+    return webClient.get()
+          .uri(uri)
+          .header("Content-Type", "application/json; charset=utf-8")
+          .retrieve()
+          .onStatus(HttpStatusCode::isError, response -> response.bodyToMono(String.class).flatMap(errorBody -> {
+            // 에러 메시지 로깅
+            System.err.println("Error response: " + errorBody);
+            // 적절한 예외를 던지거나 원하는 대로 처리
+            return Mono.error(new RuntimeException("Failed to get ticker: " + errorBody));
+          }))
+          .bodyToMono(String.class)
+          .flatMap(json -> {
+            try {
+              CollectionType javaType = objectMapper.getTypeFactory()
+                    .constructCollectionType(List.class, TickerResponseDto.class);
+              List<TickerResponseDto> result = objectMapper.readValue(json, javaType);
+              return Mono.just(result);
+            } catch (Exception e) {
+              return Mono.error(new RuntimeException("Failed to parse response: " + e.getMessage(), e));
+            }
+          })
+          .block(); // 블로킹 방식으로 리스트 반환
   }
 
   /**
@@ -128,8 +125,6 @@ public class UpbitService {
    */
   public List<OrderStatusResponseDto> getOrderStatusByIds(String tickerSymbol,
                                                           List<String> identifiers) {
-    List<OrderStatusResponseDto> result = new ArrayList<>();
-
     String url = "https://api.upbit.com/v1/orders";
 
     // OrderStatusRequestDto 객체 생성
@@ -138,47 +133,51 @@ public class UpbitService {
           .uuids(identifiers)
           .build();
 
-    // 헤더
-    HttpHeaders headers = new HttpHeaders();
-    headers.set("Content-Type", "application/json; charset=utf-8");
-    headers.set("Authorization",
-          authorizationGenerator.generateTokenWithParameter(orderStatusRequestDto));
+    // 헤더 설정
+    String authorizationToken =
+          authorizationGenerator.generateTokenWithParameter(orderStatusRequestDto);
 
-    // 파라미터를 URL에 추가
+    // URL 파라미터 추가
     UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(url);
-    try {
-      // OrderRequestDto 객체의 필드를 읽어 URI 빌더에 추가
-      Field[] fields = orderStatusRequestDto.getClass().getDeclaredFields();
-      for (Field field : fields) {
-        field.setAccessible(true);
-        Object value = field.get(orderStatusRequestDto);
-        if (value != null) {
-          uriBuilder.queryParam(field.getName(), value.toString());
-        }
+    Map<String, Object> paramMap = new TreeMap<>();
+
+    Field[] fields = orderStatusRequestDto.getClass().getDeclaredFields();
+    for (Field field : fields) {
+      field.setAccessible(true);
+      Object value;
+      try {
+        value = field.get(orderStatusRequestDto);
+      } catch (IllegalAccessException e) {
+        throw new RuntimeException(e.getMessage());
       }
-
-      // URI 생성
-      URI uri = uriBuilder.build().encode().toUri();
-
-      // 요청 보내기
-      HttpEntity<?> entity = new HttpEntity<>(headers);
-      ResponseEntity<String> response = restTemplate.exchange(
-            uri, HttpMethod.POST, entity, String.class);
-
-      // JSON 문자열을 OrderStatusResponseDto 리스트로 변환
-      if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-        String json = response.getBody();
-        CollectionType javaType = objectMapper.getTypeFactory()
-              .constructCollectionType(List.class, OrderStatusResponseDto.class);
-        result = objectMapper.readValue(json, javaType);
+      if (value != null) {
+        String fieldName = sejong.camelToSnakeCase(field.getName());
+        paramMap.put(fieldName, value);
       }
-    } catch (HttpClientErrorException e) {
-      System.err.println("Error response: " + e.getMessage());
-    } catch (Exception e) {
-      System.err.println("Unexpected error: " + e.getMessage());
     }
 
-    return result;
+    for (Map.Entry<String, Object> entry : paramMap.entrySet()) {
+      uriBuilder.queryParam(entry.getKey(), entry.getValue());
+    }
+
+    // URI 생성
+    URI uri = uriBuilder.build().encode().toUri();
+
+    // WebClient를 사용하여 비동기적으로 요청 보내기
+    return webClient.get()
+          .uri(uri)
+          .header("Content-Type", "application/json; charset=utf-8")
+          .header("Authorization", authorizationToken)
+          .retrieve()
+          .onStatus(HttpStatusCode::isError, response -> response.bodyToMono(String.class).flatMap(errorBody -> {
+            // 에러 메시지 로깅
+            System.err.println("Error response: " + errorBody);
+            // 적절한 예외를 던지거나 원하는 대로 처리
+            return Mono.error(new RuntimeException("Failed to execute order: " + errorBody));
+          }))
+          .bodyToFlux(OrderStatusResponseDto.class) // Flux로 변환
+          .collectList() // List로 수집
+          .block();
   }
 
   /**
@@ -190,7 +189,8 @@ public class UpbitService {
    * @param side         매수/매도 결정 타입
    * @return 매수/매도 성공시 true 응답
    */
-  public OrderResponseDto executeOrder(String tickerSymbol, double price, double quantity, String side) {
+  public OrderResponseDto executeOrder(String tickerSymbol, double price, double quantity,
+                                       String side) {
     String url = "https://api.upbit.com/v1/orders";
 
     // OrderRequestDto 객체 생성
@@ -207,6 +207,8 @@ public class UpbitService {
 
     // URL 파라미터 추가
     UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(url);
+    Map<String, Object> paramMap = new TreeMap<>();
+
     Field[] fields = orderRequestDto.getClass().getDeclaredFields();
     for (Field field : fields) {
       field.setAccessible(true);
@@ -217,22 +219,32 @@ public class UpbitService {
         throw new RuntimeException(e.getMessage());
       }
       if (value != null) {
-        uriBuilder.queryParam(sejong.camelToSnakeCase(field.getName()), value);
+        String fieldName = sejong.camelToSnakeCase(field.getName());
+        paramMap.put(fieldName, value);
       }
+    }
+
+    for (Map.Entry<String, Object> entry : paramMap.entrySet()) {
+      uriBuilder.queryParam(entry.getKey(), entry.getValue());
     }
 
     // URI 생성
     URI uri = uriBuilder.build().encode().toUri();
 
     // WebClient를 사용하여 비동기적으로 요청 보내기
-    OrderResponseDto result = webClient.post()
+    return webClient.post()
           .uri(uri)
           .header("Content-Type", "application/json; charset=utf-8")
           .header("Authorization", authorizationToken)
           .retrieve()
+          .onStatus(HttpStatusCode::isError,
+                response -> response.bodyToMono(String.class).flatMap(errorBody -> {
+                  // 에러 메시지 로깅
+                  System.err.println("Error response: " + errorBody);
+                  // 적절한 예외를 던지거나 원하는 대로 처리
+                  return Mono.error(new RuntimeException("Failed to execute order: " + errorBody));
+                }))
           .bodyToMono(OrderResponseDto.class)
           .block();
-
-    return result;
   }
 }
