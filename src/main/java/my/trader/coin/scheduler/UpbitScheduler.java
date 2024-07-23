@@ -86,6 +86,8 @@ public class UpbitScheduler {
           Double currentPrice = tickerData.getTradePrice();
           // 현재 거래량
           Double currentVolume = tickerData.getAccTradeVolume24h();
+          // 보유 평균가
+          Double averagePrice = upbitService.getMyAveragePrice(tickerData.getMarket());
 
           // 현재 가격 및 거래량 로깅
           ColorfulConsoleOutput.printWithColor(
@@ -98,10 +100,10 @@ public class UpbitScheduler {
           );
 
           // 스캘핑 전략을 실행하여 매수 또는 매도 결정을 내림
-          executeScalpingStrategy(currentPrice, currentVolume);
+          executeScalpingStrategy(currentPrice, currentVolume, averagePrice);
 
           // 현재 수익률 조회 및 로깅
-          calculateAndPrintProfit();
+          calculateAndPrintProfit(tickerData.getMarket());
         }
       } else {
         throw new Exception("시세 현재가 내용 없음");
@@ -177,12 +179,14 @@ public class UpbitScheduler {
   /**
    * 수익률 조회하여 콘솔에 로깅.
    */
-  private void calculateAndPrintProfit() {
+  private void calculateAndPrintProfit(String market) {
     try {
       // 매수 거래 내역 조회
-      List<Trade> buyTrades = tradeRepository.findByType(TradeType.BUY.getName());
+      List<Trade> buyTrades =
+            tradeRepository.findByTypeAndTickerSymbol(TradeType.BUY.getName(), market);
       // 판매 거래내역 조회
-      List<Trade> sellTrades = tradeRepository.findByType(TradeType.SELL.getName());
+      List<Trade> sellTrades =
+            tradeRepository.findByTypeAndTickerSymbol(TradeType.SELL.getName(), market);
 
       // 수익률을 모아줄 컬렉션
       List<Double> profitPercentages = new ArrayList<>();
@@ -203,7 +207,7 @@ public class UpbitScheduler {
         // 수익금액
         Double profit = accountedSellPrice - accountedBuyPrice;
         // 수익률
-        Double profitPercentage = (profit / buyTrade.getPrice()) * 100;
+        Double profitPercentage = (profit / accountedBuyPrice) * 100;
         // 수익률 저장
         profitPercentages.add(profitPercentage);
       }
@@ -220,7 +224,8 @@ public class UpbitScheduler {
               .orElse(0.0);
 
         ColorfulConsoleOutput.printWithColor(
-              String.format("Average Profit Percentage: %.2f%%", averageProfitPercentage),
+              String.format("[%s] Average Profit Percentage: %.2f%%", market,
+                    averageProfitPercentage),
               ColorfulConsoleOutput.GREEN);
       }
     } catch (Exception e) {
@@ -252,8 +257,9 @@ public class UpbitScheduler {
    *
    * @param currentPrice  자산의 현재 가격
    * @param currentVolume 자산의 현재 거래량
+   * @param currentVolume 자산의 평균 가격
    */
-  private void executeScalpingStrategy(double currentPrice, double currentVolume) {
+  private void executeScalpingStrategy(double currentPrice, double currentVolume, double averagePrice) {
     Optional<User> userOptional = userRepository.findById(1L);
 
     if (userOptional.isPresent()) {
@@ -280,7 +286,7 @@ public class UpbitScheduler {
           saveTrade(TradeType.BUY.getName(), tickerSymbol, currentPrice,
                 TickerSymbol.getQuantityBySymbol(tickerSymbol), result.getUuid(), simulationMode);
         }
-      } else if (scalpingStrategy.shouldSell(currentPrice) && inventory > 0) {
+      } else if (scalpingStrategy.shouldSell(currentPrice, averagePrice) && inventory > 0) {
         // 매도 신호가 발생하면 매도 로직 실행
         OrderResponseDto result = upbitService.executeSellOrder(tickerSymbol, currentPrice,
               TickerSymbol.getQuantityBySymbol(tickerSymbol));

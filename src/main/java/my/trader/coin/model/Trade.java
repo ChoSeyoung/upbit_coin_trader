@@ -20,8 +20,8 @@ public class Trade {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
-  private String tickerSymbol; // EX: KRW-BTC, KRW-XRP
-  private String type; // BUY or SELL
+  private String tickerSymbol;
+  private String type;
   private Double price;
   private Double quantity;
   private Double exchangeFee;

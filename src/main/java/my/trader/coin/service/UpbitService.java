@@ -10,7 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import my.trader.coin.dto.order.*;
+import my.trader.coin.enums.TradeType;
 import my.trader.coin.enums.UpbitType;
+import my.trader.coin.model.Trade;
+import my.trader.coin.repository.TradeRepository;
 import my.trader.coin.util.AuthorizationGenerator;
 import my.trader.coin.util.Sejong;
 import org.slf4j.Logger;
@@ -35,17 +38,20 @@ public class UpbitService {
   private final ObjectMapper objectMapper;
   private final AuthorizationGenerator authorizationGenerator;
   private final Sejong sejong;
+  private final TradeRepository tradeRepository;
 
   /**
    * this is constructor.
    */
   public UpbitService(WebClient.Builder webClientBuilder,
-                      AuthorizationGenerator authorizationGenerator, Sejong sejong) {
+                      AuthorizationGenerator authorizationGenerator, Sejong sejong,
+                      TradeRepository tradeRepository) {
     this.webClient = webClientBuilder.build();
     this.objectMapper = new ObjectMapper();
     this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     this.authorizationGenerator = authorizationGenerator;
     this.sejong = sejong;
+    this.tradeRepository = tradeRepository;
   }
 
   /**
@@ -69,12 +75,13 @@ public class UpbitService {
           .uri(uri)
           .header("Content-Type", "application/json; charset=utf-8")
           .retrieve()
-          .onStatus(HttpStatusCode::isError, response -> response.bodyToMono(String.class).flatMap(errorBody -> {
-            // 에러 메시지 로깅
-            System.err.println("Error response: " + errorBody);
-            // 적절한 예외를 던지거나 원하는 대로 처리
-            return Mono.error(new RuntimeException("Failed to get ticker: " + errorBody));
-          }))
+          .onStatus(HttpStatusCode::isError,
+                response -> response.bodyToMono(String.class).flatMap(errorBody -> {
+                  // 에러 메시지 로깅
+                  System.err.println("Error response: " + errorBody);
+                  // 적절한 예외를 던지거나 원하는 대로 처리
+                  return Mono.error(new RuntimeException("Failed to get ticker: " + errorBody));
+                }))
           .bodyToMono(String.class)
           .flatMap(json -> {
             try {
@@ -83,7 +90,8 @@ public class UpbitService {
               List<TickerResponseDto> result = objectMapper.readValue(json, javaType);
               return Mono.just(result);
             } catch (Exception e) {
-              return Mono.error(new RuntimeException("Failed to parse response: " + e.getMessage(), e));
+              return Mono.error(
+                    new RuntimeException("Failed to parse response: " + e.getMessage(), e));
             }
           })
           .block(); // 블로킹 방식으로 리스트 반환
@@ -167,12 +175,13 @@ public class UpbitService {
           .header("Content-Type", "application/json; charset=utf-8")
           .header("Authorization", authorizationToken)
           .retrieve()
-          .onStatus(HttpStatusCode::isError, response -> response.bodyToMono(String.class).flatMap(errorBody -> {
-            // 에러 메시지 로깅
-            System.err.println("Error response: " + errorBody);
-            // 적절한 예외를 던지거나 원하는 대로 처리
-            return Mono.error(new RuntimeException("Failed to execute order: " + errorBody));
-          }))
+          .onStatus(HttpStatusCode::isError,
+                response -> response.bodyToMono(String.class).flatMap(errorBody -> {
+                  // 에러 메시지 로깅
+                  System.err.println("Error response: " + errorBody);
+                  // 적절한 예외를 던지거나 원하는 대로 처리
+                  return Mono.error(new RuntimeException("Failed to execute order: " + errorBody));
+                }))
           .bodyToFlux(OrderStatusResponseDto.class) // Flux로 변환
           .collectList() // List로 수집
           .block();
@@ -244,5 +253,24 @@ public class UpbitService {
                 }))
           .bodyToMono(OrderResponseDto.class)
           .block();
+  }
+
+  /**
+   * 내 평균가 조회
+   *
+   * @param market 티커심볼
+   * @return 평균가
+   */
+  public double getMyAveragePrice(String market) {
+    List<Trade> history =
+          tradeRepository.findByTypeAndTickerSymbol(TradeType.BUY.getName(), market);
+
+    // 평균 계산
+    double total = 0;
+    for (Trade trade : history) {
+      total += trade.getPrice();
+    }
+
+    return history.isEmpty() ? 0 : total / history.size();
   }
 }

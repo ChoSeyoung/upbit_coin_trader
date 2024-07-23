@@ -14,6 +14,8 @@ public interface TradeRepository extends JpaRepository<Trade, Long> {
 
   List<Trade> findByType(String type);
 
+  List<Trade> findByTypeAndTickerSymbol(String type, String tickerSymbol);
+
   Trade findByIdentifier(String identifier);
 
 }

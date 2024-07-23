@@ -12,7 +12,7 @@ public enum TickerSymbol {
   // 비트코인
   KRW_BTC("KRW-BTC", 0.01),
   // 이더리움
-  KRW_ETH("KRW-ETH", 0.1),
+  KRW_ETH("KRW-ETH", 0.0015),
   // 리플
   KRW_XRP("KRW-XRP", 10);
 
