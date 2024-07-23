@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository;
 public interface TradeRepository extends JpaRepository<Trade, Long> {
   List<Trade> findBySimulationModeFalseAndIsSignedFalseOrIsSignedIsNull();
 
-  List<Trade> findByType(String type);
+  List<Trade> findByTickerSymbol(String type);
 
   List<Trade> findByTypeAndTickerSymbol(String type, String tickerSymbol);
 

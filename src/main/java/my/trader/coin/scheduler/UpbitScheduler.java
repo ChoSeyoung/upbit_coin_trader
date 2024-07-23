@@ -178,31 +178,38 @@ public class UpbitScheduler {
 
   /**
    * 수익률 조회하여 콘솔에 로깅.
+   * @param market 티커심볼
    */
   private void calculateAndPrintProfit(String market) {
     try {
-      // 매수 거래 내역 조회
-      List<Trade> buyTrades =
-            tradeRepository.findByTypeAndTickerSymbol(TradeType.BUY.getName(), market);
-      // 판매 거래내역 조회
-      List<Trade> sellTrades =
-            tradeRepository.findByTypeAndTickerSymbol(TradeType.SELL.getName(), market);
+      // 모든 거래 내역 조회 (매수와 매도 포함)
+      List<Trade> trades = tradeRepository.findByTickerSymbol(market);
 
       // 수익률을 모아줄 컬렉션
       List<Double> profitPercentages = new ArrayList<>();
 
-      // 구매/판매 내역을 반복하면서 수익률 계산
+      // 매수 거래와 매도 거래를 구분하여 저장할 리스트
+      List<Trade> buyTrades = new ArrayList<>();
+      List<Trade> sellTrades = new ArrayList<>();
+
+      // 거래 내역을 매수와 매도로 구분
+      for (Trade trade : trades) {
+        if (TradeType.BUY.getName().equals(trade.getType())) {
+          buyTrades.add(trade);
+        } else if (TradeType.SELL.getName().equals(trade.getType())) {
+          sellTrades.add(trade);
+        }
+      }
+
+      // 매수 거래와 매도 거래를 반복하면서 수익률 계산
       while (!buyTrades.isEmpty() && !sellTrades.isEmpty()) {
-        // 가장 최근 구매내역과 가장 최근 판매내역을 매칭하여 수익률을 계산한다.
         Trade buyTrade = buyTrades.remove(0);
         Trade sellTrade = sellTrades.remove(0);
 
-        Double accountedBuyPrice =
-              this.getAccountedPrice(TradeType.BUY.getName(), buyTrade.getPrice(),
-                    buyTrade.getQuantity(), buyTrade.getExchangeFee());
-        Double accountedSellPrice =
-              this.getAccountedPrice(TradeType.SELL.getName(), sellTrade.getPrice(),
-                    sellTrade.getQuantity(), sellTrade.getExchangeFee());
+        Double accountedBuyPrice = this.getAccountedPrice(
+              TradeType.BUY.getName(), buyTrade.getPrice(), buyTrade.getQuantity(), buyTrade.getExchangeFee());
+        Double accountedSellPrice = this.getAccountedPrice(
+              TradeType.SELL.getName(), sellTrade.getPrice(), sellTrade.getQuantity(), sellTrade.getExchangeFee());
 
         // 수익금액
         Double profit = accountedSellPrice - accountedBuyPrice;
@@ -215,8 +222,7 @@ public class UpbitScheduler {
       // 수익률 컬렉션이 비어있는 경우 거래내역이 없다는 메세지를 노출하고
       // 수익률 컬렉션이 비어있지 않은 경우엔 해당 컬렉션의 모든 수익률을 평균화하여 콘솔에 노출한다.
       if (profitPercentages.isEmpty()) {
-        ColorfulConsoleOutput.printWithColor("No matched trades found.",
-              ColorfulConsoleOutput.GREEN);
+        ColorfulConsoleOutput.printWithColor("No matched trades found.", ColorfulConsoleOutput.GREEN);
       } else {
         double averageProfitPercentage = profitPercentages.stream()
               .mapToDouble(Double::doubleValue)
@@ -224,8 +230,7 @@ public class UpbitScheduler {
               .orElse(0.0);
 
         ColorfulConsoleOutput.printWithColor(
-              String.format("[%s] Average Profit Percentage: %.2f%%", market,
-                    averageProfitPercentage),
+              String.format("[%s] Average Profit Percentage: %.2f%%", market, averageProfitPercentage),
               ColorfulConsoleOutput.GREEN);
       }
     } catch (Exception e) {
