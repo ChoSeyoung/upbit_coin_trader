@@ -1,7 +1,9 @@
 package my.trader.coin.strategy;
 
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
+import my.trader.coin.enums.Signal;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -35,7 +37,7 @@ public class ScalpingStrategy {
    * @param currentVolume 거래량
    * @return 매수결정시 true
    */
-  public boolean shouldBuy(Double currentPrice, Double currentVolume) {
+  public Signal shouldBuy(Double currentPrice, Double currentVolume) {
     // 가격 및 거래량 큐를 업데이트
     updateWindow(priceWindow, currentPrice);
     updateWindow(volumeWindow, currentVolume);
@@ -45,19 +47,20 @@ public class ScalpingStrategy {
     double averageVolume = calculateAverage(volumeWindow);
 
     // 매수 조건: 현재 가격이 평균 가격보다 높고, 현재 거래량이 평균 거래량보다 높을 때
-    return currentPrice > averagePrice && currentVolume > averageVolume;
+    return (currentPrice > averagePrice && currentVolume > averageVolume) ? Signal.BUY :
+          Signal.NO_ACTION;
   }
 
   /**
    * 매도 의사결정.
    *
-   * @param currentPrice  현재가
+   * @param currentPrice 현재가
    * @return 매도 결정시 true
    */
-  public boolean shouldSell(Double currentPrice, Double averagePrice) {
+  public Signal shouldSell(Double currentPrice, Double averagePrice) {
     // 가격 및 거래량 큐를 업데이트
     if (priceWindow.size() < WINDOW_SIZE) {
-      return false;
+      return Signal.NO_ACTION;
     }
 
     // 익절 기준 금액
@@ -66,7 +69,13 @@ public class ScalpingStrategy {
     double stopLossPrice = averagePrice * (1 - loseRatio);
 
     // 매수가가 익절 기준금액을 초과하거나 손절 기준금액을 초과할경우 매도 신호
-    return currentPrice > takeProfitPrice || currentPrice < stopLossPrice;
+    if (currentPrice > takeProfitPrice) {
+      return Signal.TAKE_PROFIT;
+    } else if (currentPrice < stopLossPrice) {
+      return Signal.STOP_LOSS;
+    } else {
+      return Signal.NO_ACTION;
+    }
   }
 
   /**

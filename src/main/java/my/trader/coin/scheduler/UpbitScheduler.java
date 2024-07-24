@@ -4,16 +4,17 @@ import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import my.trader.coin.config.CacheConfig;
 import my.trader.coin.dto.order.OrderResponseDto;
 import my.trader.coin.dto.order.OrderStatusResponseDto;
 import my.trader.coin.dto.order.TickerResponseDto;
-import my.trader.coin.enums.ColorfulConsoleOutput;
-import my.trader.coin.enums.TickerSymbol;
-import my.trader.coin.enums.TradeType;
+import my.trader.coin.enums.*;
+import my.trader.coin.model.Config;
 import my.trader.coin.model.Trade;
 import my.trader.coin.model.User;
 import my.trader.coin.repository.TradeRepository;
 import my.trader.coin.repository.UserRepository;
+import my.trader.coin.service.ConfigService;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.strategy.ScalpingStrategy;
 import my.trader.coin.util.Thales;
@@ -49,6 +50,7 @@ public class UpbitScheduler {
   private final ScalpingStrategy scalpingStrategy;
   private final TradeRepository tradeRepository;
   private final UserRepository userRepository;
+  private final ConfigService configService;
   // 콘솔 데이터 출력용 formatter
   DecimalFormat df = new DecimalFormat("#,##0.00");
 
@@ -64,12 +66,14 @@ public class UpbitScheduler {
         UpbitService upbitService,
         ScalpingStrategy scalpingStrategy,
         TradeRepository tradeRepository,
-        UserRepository userRepository
+        UserRepository userRepository,
+        ConfigService configService
   ) {
     this.upbitService = upbitService;
     this.scalpingStrategy = scalpingStrategy;
     this.tradeRepository = tradeRepository;
     this.userRepository = userRepository;
+    this.configService = configService;
   }
 
   /**
@@ -284,10 +288,12 @@ public class UpbitScheduler {
       // 주문 수량 계산
       double quantity = Thales.calculateMinimumOrderQuantity(minimumOrderAmount, currentPrice);
 
-      if (scalpingStrategy.shouldBuy(currentPrice, currentVolume)) {
+      Signal buySignal = scalpingStrategy.shouldBuy(currentPrice, currentVolume);
+      if (buySignal.isBuySignal()) {
         // 매수 신호가 발생하면 매수 로직 실행
         OrderResponseDto result =
-              upbitService.executeBuyOrder(tickerSymbol, currentPrice, quantity);
+              upbitService.executeOrder(tickerSymbol, currentPrice, quantity,
+                    UpbitType.ORDER_SIDE_BID.getType());
 
         // 매수 주문 실행 성공 후 처리 프로세스
         if (result != null) {
@@ -303,10 +309,24 @@ public class UpbitScheduler {
           saveTrade(TradeType.BUY.getName(), tickerSymbol, currentPrice, quantity,
                 result.getUuid(), simulationMode);
         }
-      } else if (scalpingStrategy.shouldSell(currentPrice, averagePrice) && inventory > 0) {
+      }
+
+      Signal sellSignal = scalpingStrategy.shouldSell(currentPrice, averagePrice);
+      if (sellSignal.isSellSignal() && inventory > 0) {
+        // 전량 매도 플래그 활성화시 익절 시그널 발생되면 전량 매도
+        if (sellSignal.equals(Signal.TAKE_PROFIT)) {
+          Config config = configService.getConfByName("whole_sell_when_profit");
+          boolean wholeSellWhenProfit = Boolean.parseBoolean(config.getVal());
+
+          if (wholeSellWhenProfit) {
+            quantity = inventory;
+          }
+        }
+
         // 매도 신호가 발생하면 매도 로직 실행
         OrderResponseDto result =
-              upbitService.executeSellOrder(tickerSymbol, currentPrice, quantity);
+              upbitService.executeOrder(tickerSymbol, currentPrice, quantity,
+                    UpbitType.ORDER_SIDE_ASK.getType());
 
         // 매도 주문 실행 성공 후 처리 프로세스
         if (result != null) {
