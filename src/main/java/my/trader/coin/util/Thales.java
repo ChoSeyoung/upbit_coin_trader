@@ -26,4 +26,18 @@ public class Thales {
 
     return count;
   }
+
+  /**
+   * 최소 주문 금액 맞춰진 수량 조회
+   *
+   * @param minimumOrderAmount 최소 주문금액
+   * @param currentPrice       현재가격
+   * @return 최소주문수량
+   */
+  public static double calculateMinimumOrderQuantity(double minimumOrderAmount,
+                                                     double currentPrice) {
+    double rawQuantity = minimumOrderAmount / currentPrice;
+
+    return Math.ceil(rawQuantity * 10) / 10.0;
+  }
 }

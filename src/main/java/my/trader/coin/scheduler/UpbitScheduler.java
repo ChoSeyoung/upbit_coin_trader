@@ -16,6 +16,7 @@ import my.trader.coin.repository.TradeRepository;
 import my.trader.coin.repository.UserRepository;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.strategy.ScalpingStrategy;
+import my.trader.coin.util.Thales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,6 +41,9 @@ public class UpbitScheduler {
   // 티커 심볼
   @Value("${upbit.ticker.symbol}")
   private String tickerSymbol;
+
+  @Value("${upbit.minimum.order.amount}")
+  private double minimumOrderAmount;
 
   private final UpbitService upbitService;
   private final ScalpingStrategy scalpingStrategy;
@@ -178,6 +182,7 @@ public class UpbitScheduler {
 
   /**
    * 수익률 조회하여 콘솔에 로깅.
+   *
    * @param market 티커심볼
    */
   private void calculateAndPrintProfit(String market) {
@@ -207,9 +212,11 @@ public class UpbitScheduler {
         Trade sellTrade = sellTrades.remove(0);
 
         Double accountedBuyPrice = this.getAccountedPrice(
-              TradeType.BUY.getName(), buyTrade.getPrice(), buyTrade.getQuantity(), buyTrade.getExchangeFee());
+              TradeType.BUY.getName(), buyTrade.getPrice(), buyTrade.getQuantity(),
+              buyTrade.getExchangeFee());
         Double accountedSellPrice = this.getAccountedPrice(
-              TradeType.SELL.getName(), sellTrade.getPrice(), sellTrade.getQuantity(), sellTrade.getExchangeFee());
+              TradeType.SELL.getName(), sellTrade.getPrice(), sellTrade.getQuantity(),
+              sellTrade.getExchangeFee());
 
         // 수익금액
         Double profit = accountedSellPrice - accountedBuyPrice;
@@ -222,7 +229,8 @@ public class UpbitScheduler {
       // 수익률 컬렉션이 비어있는 경우 거래내역이 없다는 메세지를 노출하고
       // 수익률 컬렉션이 비어있지 않은 경우엔 해당 컬렉션의 모든 수익률을 평균화하여 콘솔에 노출한다.
       if (profitPercentages.isEmpty()) {
-        ColorfulConsoleOutput.printWithColor("No matched trades found.", ColorfulConsoleOutput.GREEN);
+        ColorfulConsoleOutput.printWithColor("No matched trades found.",
+              ColorfulConsoleOutput.GREEN);
       } else {
         double averageProfitPercentage = profitPercentages.stream()
               .mapToDouble(Double::doubleValue)
@@ -230,7 +238,8 @@ public class UpbitScheduler {
               .orElse(0.0);
 
         ColorfulConsoleOutput.printWithColor(
-              String.format("[%s] Average Profit Percentage: %.2f%%", market, averageProfitPercentage),
+              String.format("[%s] Average Profit Percentage: %.2f%%", market,
+                    averageProfitPercentage),
               ColorfulConsoleOutput.GREEN);
       }
     } catch (Exception e) {
@@ -264,17 +273,21 @@ public class UpbitScheduler {
    * @param currentVolume 자산의 현재 거래량
    * @param currentVolume 자산의 평균 가격
    */
-  private void executeScalpingStrategy(double currentPrice, double currentVolume, double averagePrice) {
+  private void executeScalpingStrategy(double currentPrice, double currentVolume,
+                                       double averagePrice) {
     Optional<User> userOptional = userRepository.findById(1L);
 
     if (userOptional.isPresent()) {
       User user = userOptional.get();
       double inventory = user.getInventory(tickerSymbol);
 
+      // 주문 수량 계산
+      double quantity = Thales.calculateMinimumOrderQuantity(minimumOrderAmount, currentPrice);
+
       if (scalpingStrategy.shouldBuy(currentPrice, currentVolume)) {
         // 매수 신호가 발생하면 매수 로직 실행
-        OrderResponseDto result = upbitService.executeBuyOrder(tickerSymbol, currentPrice,
-              TickerSymbol.getQuantityBySymbol(tickerSymbol));
+        OrderResponseDto result =
+              upbitService.executeBuyOrder(tickerSymbol, currentPrice, quantity);
 
         // 매수 주문 실행 성공 후 처리 프로세스
         if (result != null) {
@@ -285,16 +298,15 @@ public class UpbitScheduler {
           );
 
           // 계좌정보 업데이트
-          saveUser(TradeType.BUY.getName(), tickerSymbol,
-                TickerSymbol.getQuantityBySymbol(tickerSymbol));
+          saveUser(TradeType.BUY.getName(), tickerSymbol, quantity);
           // 거래내역 업데이트
-          saveTrade(TradeType.BUY.getName(), tickerSymbol, currentPrice,
-                TickerSymbol.getQuantityBySymbol(tickerSymbol), result.getUuid(), simulationMode);
+          saveTrade(TradeType.BUY.getName(), tickerSymbol, currentPrice, quantity,
+                result.getUuid(), simulationMode);
         }
       } else if (scalpingStrategy.shouldSell(currentPrice, averagePrice) && inventory > 0) {
         // 매도 신호가 발생하면 매도 로직 실행
-        OrderResponseDto result = upbitService.executeSellOrder(tickerSymbol, currentPrice,
-              TickerSymbol.getQuantityBySymbol(tickerSymbol));
+        OrderResponseDto result =
+              upbitService.executeSellOrder(tickerSymbol, currentPrice, quantity);
 
         // 매도 주문 실행 성공 후 처리 프로세스
         if (result != null) {
@@ -305,11 +317,10 @@ public class UpbitScheduler {
           );
 
           // 계좌정보 업데이트
-          saveUser(TradeType.SELL.getName(), tickerSymbol,
-                TickerSymbol.getQuantityBySymbol(tickerSymbol));
+          saveUser(TradeType.SELL.getName(), tickerSymbol, quantity);
           // 거래내역 업데이트
-          saveTrade(TradeType.SELL.getName(), tickerSymbol, currentPrice,
-                TickerSymbol.getQuantityBySymbol(tickerSymbol), result.getUuid(), simulationMode);
+          saveTrade(TradeType.SELL.getName(), tickerSymbol, currentPrice, quantity,
+                result.getUuid(), simulationMode);
         }
       }
     }
