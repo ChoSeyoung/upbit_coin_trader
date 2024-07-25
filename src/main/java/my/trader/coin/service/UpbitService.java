@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import my.trader.coin.dto.exchange.*;
-import my.trader.coin.dto.quotation.Candle;
+import my.trader.coin.dto.quotation.CandleResponseDto;
 import my.trader.coin.dto.quotation.CandleRequestDto;
 import my.trader.coin.enums.UpbitType;
 import my.trader.coin.util.AuthorizationGenerator;
@@ -68,10 +68,10 @@ public class UpbitService {
           .build();
 
     URI uri = buildUriWithParams("https://api.upbit.com/v1/candles/minutes/1", candleRequestDto);
-    List<Candle> candles = performGetRequest(uri, Candle.class);
+    List<CandleResponseDto> candleResponseDtos = performGetRequest(uri, CandleResponseDto.class);
     List<Double> closePrices = new ArrayList<>();
-    for (Candle candle : candles) {
-      closePrices.add(candle.getTradePrice());
+    for (CandleResponseDto candleResponseDto : candleResponseDtos) {
+      closePrices.add(candleResponseDto.getTradePrice());
     }
     return closePrices;
   }
