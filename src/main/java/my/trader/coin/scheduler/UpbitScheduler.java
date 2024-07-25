@@ -102,7 +102,7 @@ public class UpbitScheduler {
           executeScalpingStrategy(tickerData.getMarket(), currentPrice);
         }
       } else {
-        throw new Exception("시세 현재가 내용 없음");
+        logger.error("조회된 시장 데이터가 없습니다.");
       }
     } catch (Exception e) {
       // 예외 발생 시 로그에 에러 메시지 출력

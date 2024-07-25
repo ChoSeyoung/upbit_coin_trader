@@ -1,5 +1,6 @@
 package my.trader.coin.service;
 
+import java.util.List;
 import my.trader.coin.enums.TradeType;
 import my.trader.coin.model.Inventory;
 import my.trader.coin.repository.InventoryRepository;
@@ -29,6 +30,10 @@ public class InventoryService {
   }
 
   public Double getQuantityByMarket(String market) {
-    return inventoryRepository.findQuantityByMarket(market);
+    List<Inventory> inventoryList = inventoryRepository.findAll();
+    return inventoryList.stream()
+          .filter(inventory -> market.equals(inventory.getMarket()))
+          .mapToDouble(Inventory::getQuantity)
+          .sum();
   }
 }
