@@ -38,10 +38,7 @@ public class Thales {
    */
   public static double calculateMinimumOrderQuantity(double minimumOrderAmount,
                                                      double currentPrice) {
-    double rawQuantity = minimumOrderAmount / currentPrice;
-    // 소수점 8자리까지 자른 후 올림 처리
-    double truncatedQuantity = Math.floor(rawQuantity * Math.pow(10, 8)) / Math.pow(10, 8);
-    return Math.ceil(truncatedQuantity * Math.pow(10, 8)) / Math.pow(10, 8);
+    return minimumOrderAmount / currentPrice;
   }
 
   /**

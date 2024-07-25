@@ -36,6 +36,15 @@ public class UpbitService {
     this.authorizationGenerator = authorizationGenerator;
   }
 
+  public List<AccountResponseDto> getAccount() {
+    String url = "https://api.upbit.com/v1/accounts";
+
+    URI uri = UriComponentsBuilder.fromHttpUrl(url).build().toUri();
+
+    String authorizationToken = authorizationGenerator.generateTokenWithoutParameter();
+    return performGetRequest(uri, AccountResponseDto.class, authorizationToken);
+  }
+
   public List<TickerResponseDto> getTicker(List<String> markets) {
     TickerRequestDto tickerRequestDto = TickerRequestDto.builder()
           .markets(String.join(",", markets))

@@ -152,8 +152,8 @@ public class UpbitScheduler {
       }
     }
 
-    Signal sellSignal = scalpingStrategy.shouldSell(market);
-    if (sellSignal.isSellSignal() && inventory > 0) {
+    Signal sellSignal = scalpingStrategy.shouldSell(market, currentPrice);
+    if (sellSignal.isSellSignal()) {
       // 전량 매도 플래그 활성화시 익절 시그널 발생되면 전량 매도
       if (sellSignal.equals(Signal.TAKE_PROFIT)) {
         Config config = configService.getConfByName(CacheKey.WHOLE_SELL_WHEN_PROFIT.getKey());
