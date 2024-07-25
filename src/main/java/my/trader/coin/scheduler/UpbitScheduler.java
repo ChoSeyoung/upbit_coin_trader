@@ -99,6 +99,7 @@ public class UpbitScheduler {
           executeScalpingStrategy(market, currentPrice);
 
           ColorfulConsoleOutput.printWithColor("-------------", ColorfulConsoleOutput.CYAN);
+          sleep(1);
         }
       } else {
         logger.error("조회된 시장 데이터가 없습니다.");
@@ -108,6 +109,14 @@ public class UpbitScheduler {
     } finally {
       ColorfulConsoleOutput.printWithColor(++schedulerExecutedCount + " set cleared",
             ColorfulConsoleOutput.CYAN);
+    }
+  }
+
+  private void sleep(long sec) {
+    try {
+      Thread.sleep(sec * 1000);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
     }
   }
 
