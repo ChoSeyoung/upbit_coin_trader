@@ -1,4 +1,4 @@
-package my.trader.coin.dto.order;
+package my.trader.coin.dto.exchange;
 
 import lombok.Data;
 
@@ -6,7 +6,7 @@ import lombok.Data;
 public class OrderManualRequestDto {
   private Long userId;
   private String side;
-  private String tickerSymbol;
+  private String market;
   private Double price;
   private Double quantity;
   private Boolean simulationMode;

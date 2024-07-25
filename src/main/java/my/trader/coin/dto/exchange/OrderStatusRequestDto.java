@@ -1,4 +1,4 @@
-package my.trader.coin.dto.order;
+package my.trader.coin.dto.exchange;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

@@ -12,9 +12,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Config {
-
   @Id
   private String name;
-
   private String val;
 }

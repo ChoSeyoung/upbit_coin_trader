@@ -4,17 +4,13 @@ import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-import my.trader.coin.config.CacheConfig;
-import my.trader.coin.dto.order.OrderResponseDto;
-import my.trader.coin.dto.order.OrderStatusResponseDto;
-import my.trader.coin.dto.order.TickerResponseDto;
+import java.util.stream.Stream;
+import my.trader.coin.dto.exchange.OrderResponseDto;
+import my.trader.coin.dto.exchange.TickerResponseDto;
 import my.trader.coin.enums.*;
 import my.trader.coin.model.Config;
-import my.trader.coin.model.Trade;
-import my.trader.coin.model.User;
-import my.trader.coin.repository.TradeRepository;
-import my.trader.coin.repository.UserRepository;
 import my.trader.coin.service.ConfigService;
+import my.trader.coin.service.InventoryService;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.strategy.ScalpingStrategy;
 import my.trader.coin.util.Thales;
@@ -39,18 +35,14 @@ public class UpbitScheduler {
   @Value("${simulation.mode}")
   private boolean simulationMode;
 
-  // 티커 심볼
-  @Value("${upbit.ticker.symbol}")
-  private String tickerSymbol;
-
   @Value("${upbit.minimum.order.amount}")
   private double minimumOrderAmount;
 
   private final UpbitService upbitService;
   private final ScalpingStrategy scalpingStrategy;
-  private final TradeRepository tradeRepository;
-  private final UserRepository userRepository;
   private final ConfigService configService;
+  private final InventoryService inventoryService;
+
   // 콘솔 데이터 출력용 formatter
   DecimalFormat df = new DecimalFormat("#,##0.00");
 
@@ -59,21 +51,19 @@ public class UpbitScheduler {
    *
    * @param upbitService     UpbitService
    * @param scalpingStrategy ScalpingStrategy
-   * @param tradeRepository  TradeRepository
-   * @param userRepository   UserRepository
+   * @param configService    ConfigService
+   * @param inventoryService InventoryService
    */
   public UpbitScheduler(
         UpbitService upbitService,
         ScalpingStrategy scalpingStrategy,
-        TradeRepository tradeRepository,
-        UserRepository userRepository,
-        ConfigService configService
+        ConfigService configService,
+        InventoryService inventoryService
   ) {
     this.upbitService = upbitService;
     this.scalpingStrategy = scalpingStrategy;
-    this.tradeRepository = tradeRepository;
-    this.userRepository = userRepository;
     this.configService = configService;
+    this.inventoryService = inventoryService;
   }
 
   /**
@@ -82,7 +72,10 @@ public class UpbitScheduler {
   @Scheduled(cron = "0 * * * * *") // 매 분 0초에 실행
   public void fetchMarketData() {
     try {
-      List<String> markets = new ArrayList<>(List.of(tickerSymbol));
+      Config scheduledMarketConfig = configService.getConfByName(CacheKey.SCHEDULED_MARKET.getKey());
+
+      List<String> markets = Stream.of(scheduledMarketConfig.getVal().split(","))
+            .collect(Collectors.toCollection(ArrayList::new));
 
       // 시장 데이터 조회
       List<TickerResponseDto> tickerDataList = upbitService.getTicker(markets);
@@ -94,8 +87,6 @@ public class UpbitScheduler {
           Double currentPrice = tickerData.getTradePrice();
           // 현재 거래량
           Double currentVolume = tickerData.getAccTradeVolume24h();
-          // 보유 평균가
-          Double averagePrice = upbitService.getMyAveragePrice(tickerData.getMarket());
 
           // 현재 가격 및 거래량 로깅
           ColorfulConsoleOutput.printWithColor(
@@ -108,10 +99,7 @@ public class UpbitScheduler {
           );
 
           // 스캘핑 전략을 실행하여 매수 또는 매도 결정을 내림
-          executeScalpingStrategy(currentPrice, currentVolume, averagePrice);
-
-          // 현재 수익률 조회 및 로깅
-          calculateAndPrintProfit(tickerData.getMarket());
+          executeScalpingStrategy(tickerData.getMarket(), currentPrice);
         }
       } else {
         throw new Exception("시세 현재가 내용 없음");
@@ -123,281 +111,64 @@ public class UpbitScheduler {
   }
 
   /**
-   * 10초마다 매수/매도 주문이 정상적으로 실행되었는지 확인하고 업데이트 합니다.
-   */
-//  @Scheduled(fixedRate = 10000) // 10초마다 실행
-//  public void checkTradeStatus() {
-//    // 시뮬레이션 모드에서는 실행하지 않습니다.
-//    if (!simulationMode) {
-//      try {
-//        // 거래완료 체크가 되지 않은 데이터 추출
-//        List<Trade> tradesToCheck = tradeRepository.findBySimulationModeFalseAndIsSignedFalseOrIsSignedIsNull();
-//
-//        // 거래완료 체크가 되지 않은 데이터가 없다면 스케줄러 종료
-//        if (tradesToCheck.isEmpty()) {
-//          return;
-//        }
-//
-//        // 티커심볼을 기준으로 그룹화
-//        Map<String, List<Trade>> tradesByTicker = tradesToCheck.stream()
-//              .collect(Collectors.groupingBy(Trade::getTickerSymbol));
-//
-//        // 각 티커심볼을 기준으로 업비트에 거래완료 여부 체크
-//        for (Map.Entry<String, List<Trade>> entry : tradesByTicker.entrySet()) {
-//          // 티커심볼
-//          String tickerSymbol = entry.getKey();
-//          // 티커심볼 기준 거래내역
-//          List<Trade> trades = entry.getValue();
-//
-//          // 식별자 목록 생성
-//          List<String> identifiers = trades.stream()
-//                .map(Trade::getIdentifier)
-//                .collect(Collectors.toList());
-//
-//          // 식별자를 사용하여 API 호출
-//          List<OrderStatusResponseDto> response =
-//                upbitService.getOrderStatusByIds(tickerSymbol, identifiers);
-//
-//          // 각 주문의 상태 확인
-//          for (OrderStatusResponseDto order : response) {
-//            // 식별자
-//            String identifier = order.getUuid();
-//            // 남은 체결량
-//            double remainingVolume = order.getRemainingVolume();
-//
-//            // 주문수량이 모두 체결되었을 경우 모두 체결된것으로 확인
-//            boolean isSigned = remainingVolume == 0;
-//
-//            // 주문한 수량이 모두 체결되었다면 거래내역 업데이트
-//            if (isSigned) {
-//              Trade trade = tradeRepository.findByIdentifier(identifier);
-//              if (trade != null) {
-//                trade.setIsSigned(true);
-//                tradeRepository.save(trade);
-//              }
-//            }
-//          }
-//        }
-//      } catch (Exception e) {
-//        logger.error("주문 상태를 확인하는 중 오류 발생", e);
-//      }
-//    }
-//  }
-
-  /**
-   * 수익률 조회하여 콘솔에 로깅.
-   *
-   * @param market 티커심볼
-   */
-  private void calculateAndPrintProfit(String market) {
-    try {
-      // 모든 거래 내역 조회 (매수와 매도 포함)
-      List<Trade> trades = tradeRepository.findByTickerSymbol(market);
-
-      // 수익률을 모아줄 컬렉션
-      List<Double> profitPercentages = new ArrayList<>();
-
-      // 매수 거래와 매도 거래를 구분하여 저장할 리스트
-      List<Trade> buyTrades = new ArrayList<>();
-      List<Trade> sellTrades = new ArrayList<>();
-
-      // 거래 내역을 매수와 매도로 구분
-      for (Trade trade : trades) {
-        if (TradeType.BUY.getName().equals(trade.getType())) {
-          buyTrades.add(trade);
-        } else if (TradeType.SELL.getName().equals(trade.getType())) {
-          sellTrades.add(trade);
-        }
-      }
-
-      // 매수 거래와 매도 거래를 반복하면서 수익률 계산
-      while (!buyTrades.isEmpty() && !sellTrades.isEmpty()) {
-        Trade buyTrade = buyTrades.remove(0);
-        Trade sellTrade = sellTrades.remove(0);
-
-        Double accountedBuyPrice = this.getAccountedPrice(
-              TradeType.BUY.getName(), buyTrade.getPrice(), buyTrade.getQuantity(),
-              buyTrade.getExchangeFee());
-        Double accountedSellPrice = this.getAccountedPrice(
-              TradeType.SELL.getName(), sellTrade.getPrice(), sellTrade.getQuantity(),
-              sellTrade.getExchangeFee());
-
-        // 수익금액
-        Double profit = accountedSellPrice - accountedBuyPrice;
-        // 수익률
-        Double profitPercentage = (profit / accountedBuyPrice) * 100;
-        // 수익률 저장
-        profitPercentages.add(profitPercentage);
-      }
-
-      // 수익률 컬렉션이 비어있는 경우 거래내역이 없다는 메세지를 노출하고
-      // 수익률 컬렉션이 비어있지 않은 경우엔 해당 컬렉션의 모든 수익률을 평균화하여 콘솔에 노출한다.
-      if (profitPercentages.isEmpty()) {
-        ColorfulConsoleOutput.printWithColor("No matched trades found.",
-              ColorfulConsoleOutput.GREEN);
-      } else {
-        double averageProfitPercentage = profitPercentages.stream()
-              .mapToDouble(Double::doubleValue)
-              .average()
-              .orElse(0.0);
-
-        ColorfulConsoleOutput.printWithColor(
-              String.format("[%s] Average Profit Percentage: %.2f%%", market,
-                    averageProfitPercentage),
-              ColorfulConsoleOutput.GREEN);
-      }
-    } catch (Exception e) {
-      // 예외 발생 시 로그에 에러 메시지 출력
-      logger.error("거래 데이터를 가져오는 중 오류 발생", e);
-    }
-  }
-
-  /**
-   * 매수/매도에 따른 수수료 포함된 금액을 조회.
-   *
-   * @param type             매수/매도 구분
-   * @param price            매수/매도 가격
-   * @param quantity         매수/매도 수량
-   * @param exchangeFeeRatio 거래소 수수료
-   * @return 수수료금액이 포함된 매수/매도 금액
-   */
-  private double getAccountedPrice(String type, Double price, Double quantity,
-                                   Double exchangeFeeRatio) {
-    if (type.equals(TradeType.BUY.getName())) {
-      return (price + price * exchangeFeeRatio) * quantity;
-    } else {
-      return (price - price * exchangeFeeRatio) * quantity;
-    }
-  }
-
-  /**
    * 가져온 시장 데이터를 기반으로 스캘핑 전략을 실행합니다.
    *
-   * @param currentPrice  자산의 현재 가격
-   * @param currentVolume 자산의 현재 거래량
-   * @param currentVolume 자산의 평균 가격
+   * @param market       마켓코드
+   * @param currentPrice 자산의 현재 가격
    */
-  private void executeScalpingStrategy(double currentPrice, double currentVolume,
-                                       double averagePrice) {
-    Optional<User> userOptional = userRepository.findById(1L);
+  private void executeScalpingStrategy(String market, double currentPrice) {
+    // 현재 보유량 조회
+    Double inventory = inventoryService.getQuantityByMarket(market);
 
-    if (userOptional.isPresent()) {
-      User user = userOptional.get();
-      double inventory = user.getInventory(tickerSymbol);
+    // 주문 수량 계산
+    double quantity = Thales.calculateMinimumOrderQuantity(minimumOrderAmount, currentPrice);
 
-      // 주문 수량 계산
-      double quantity = Thales.calculateMinimumOrderQuantity(minimumOrderAmount, currentPrice);
+    Signal buySignal = scalpingStrategy.shouldBuy(market);
+    if (buySignal.isBuySignal()) {
+      // 매수 신호가 발생하면 매수 로직 실행
+      OrderResponseDto result =
+            upbitService.executeOrder(market, currentPrice, quantity, UpbitType.ORDER_SIDE_BID.getType());
 
-      Signal buySignal = scalpingStrategy.shouldBuy(currentPrice, currentVolume);
-      if (buySignal.isBuySignal()) {
-        // 매수 신호가 발생하면 매수 로직 실행
-        OrderResponseDto result =
-              upbitService.executeOrder(tickerSymbol, currentPrice, quantity,
-                    UpbitType.ORDER_SIDE_BID.getType());
+      // 매수 주문 실행 성공 후 처리 프로세스
+      if (result != null) {
+        ColorfulConsoleOutput.printWithColor(
+              String.format("Successfully bought %s at price: %s", market, df.format(currentPrice)),
+              ColorfulConsoleOutput.RED
+        );
 
-        // 매수 주문 실행 성공 후 처리 프로세스
-        if (result != null) {
-          ColorfulConsoleOutput.printWithColor(
-                String.format("Successfully bought %s at price: %s", tickerSymbol,
-                      df.format(currentPrice)),
-                ColorfulConsoleOutput.RED
-          );
-
-          // 계좌정보 업데이트
-          saveUser(TradeType.BUY.getName(), tickerSymbol, quantity);
-          // 거래내역 업데이트
-          saveTrade(TradeType.BUY.getName(), tickerSymbol, currentPrice, quantity,
-                result.getUuid(), simulationMode);
-        }
-      }
-
-      Signal sellSignal = scalpingStrategy.shouldSell(currentPrice, averagePrice);
-      if (sellSignal.isSellSignal() && inventory > 0) {
-        // 전량 매도 플래그 활성화시 익절 시그널 발생되면 전량 매도
-        if (sellSignal.equals(Signal.TAKE_PROFIT)) {
-          Config config = configService.getConfByName("whole_sell_when_profit");
-          boolean wholeSellWhenProfit = Boolean.parseBoolean(config.getVal());
-
-          if (wholeSellWhenProfit) {
-            quantity = inventory;
-          }
-        }
-
-        // 매도 신호가 발생하면 매도 로직 실행
-        OrderResponseDto result =
-              upbitService.executeOrder(tickerSymbol, currentPrice, quantity,
-                    UpbitType.ORDER_SIDE_ASK.getType());
-
-        // 매도 주문 실행 성공 후 처리 프로세스
-        if (result != null) {
-          ColorfulConsoleOutput.printWithColor(
-                String.format("Successfully sold %s at price: %s", tickerSymbol,
-                      df.format(currentPrice)),
-                ColorfulConsoleOutput.BLUE
-          );
-
-          // 계좌정보 업데이트
-          saveUser(TradeType.SELL.getName(), tickerSymbol, quantity);
-          // 거래내역 업데이트
-          saveTrade(TradeType.SELL.getName(), tickerSymbol, currentPrice, quantity,
-                result.getUuid(), simulationMode);
-        }
+        // 계좌정보 업데이트
+        inventoryService.saveQuantity(TradeType.BUY, market, quantity);
       }
     }
-  }
 
-  /**
-   * 거래 정보를 저장하는 메서드.
-   *
-   * @param type           거래 타입 (ex. BUY or SELL)
-   * @param tickerSymbol   마켓 심볼 (ex. KRW-BTC)
-   * @param price          거래 가격
-   * @param quantity       거래 수량
-   * @param identifier     식별자
-   * @param simulationMode 모의투자 여부
-   */
-  private void saveTrade(String type, String tickerSymbol, double price, double quantity,
-                         String identifier, boolean simulationMode) {
-    Trade trade = new Trade();
-    trade.setTickerSymbol(tickerSymbol);
-    trade.setType(type); // 거래 타입 (매수 또는 매도)
-    trade.setPrice(price); // 거래 가격
-    trade.setQuantity(quantity); // 거래 수량
-    trade.setExchangeFee(exchangeFeeRatio);
-    trade.setTimestamp(LocalDateTime.now()); // 거래 시간
-    trade.setIdentifier(identifier); // 식별자
-    trade.setSimulationMode(simulationMode); // 시뮬레이션 모드
-    trade.setIsSigned(false); // 체결여부
-    tradeRepository.save(trade); // 거래 정보를 저장소에 저장
-  }
+    Signal sellSignal = scalpingStrategy.shouldSell(market);
+    if (sellSignal.isSellSignal() && inventory > 0) {
+      // 전량 매도 플래그 활성화시 익절 시그널 발생되면 전량 매도
+      if (sellSignal.equals(Signal.TAKE_PROFIT)) {
+        Config config = configService.getConfByName(CacheKey.WHOLE_SELL_WHEN_PROFIT.getKey());
+        boolean wholeSellWhenProfit = Boolean.parseBoolean(config.getVal());
 
-  /**
-   * 사용자의 인벤토리를 업데이트하는 메서드.
-   *
-   * @param type         거래 타입 (ex. BUY or SELL)
-   * @param tickerSymbol 마켓 심볼 (ex. KRW-BTC)
-   * @param quantity     거래 수량
-   */
-  private void saveUser(String type, String tickerSymbol, double quantity) {
-    Optional<User> userOptional = userRepository.findById(1L);
-    if (userOptional.isPresent()) {
-      User user = userOptional.get();
-
-      // 현재 심볼의 인벤토리 수량 가져오기
-      double currentInventory = user.getInventory(tickerSymbol);
-
-      // 거래 타입에 따라 인벤토리 업데이트
-      if (TradeType.BUY.getName().equalsIgnoreCase(type)) {
-        currentInventory += quantity;
-      } else if (TradeType.SELL.getName().equalsIgnoreCase(type)) {
-        currentInventory -= quantity;
+        if (wholeSellWhenProfit) {
+          quantity = inventory;
+        }
       }
 
-      // 업데이트된 인벤토리 수량 저장
-      user.updateInventory(tickerSymbol, currentInventory);
+      // 매도 신호가 발생하면 매도 로직 실행
+      OrderResponseDto result =
+            upbitService.executeOrder(market, currentPrice, quantity,
+                  UpbitType.ORDER_SIDE_ASK.getType());
 
-      // 변경된 사용자 정보 저장
-      userRepository.save(user);
+      // 매도 주문 실행 성공 후 처리 프로세스
+      if (result != null) {
+        ColorfulConsoleOutput.printWithColor(
+              String.format("Successfully sold %s at price: %s", market,
+                    df.format(currentPrice)),
+              ColorfulConsoleOutput.BLUE
+        );
+
+        // 계좌정보 업데이트
+        inventoryService.saveQuantity(TradeType.SELL, market, quantity);
+      }
     }
   }
 }

@@ -1,10 +1,10 @@
-package my.trader.coin.dto.order;
+package my.trader.coin.dto.exchange;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
-public class OrderStatusResponseDto {
+public class OrderResponseDto {
   @JsonProperty("uuid")
   private String uuid;
 
@@ -46,9 +46,6 @@ public class OrderStatusResponseDto {
 
   @JsonProperty("executed_volume")
   private Double executedVolume;
-
-  @JsonProperty("executed_funds")
-  private Double executedFunds;
 
   @JsonProperty("trades_count")
   private Integer tradesCount;

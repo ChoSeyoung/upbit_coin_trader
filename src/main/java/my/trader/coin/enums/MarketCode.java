@@ -3,12 +3,12 @@ package my.trader.coin.enums;
 import lombok.Getter;
 
 /**
- * TickerSymbol 은 Upbit 에서 사용할 수 있는 다양한 Symbol 의 집합체입니다.
+ * market 은 Upbit 에서 사용할 수 있는 다양한 Symbol 의 집합체입니다.
  * 해당 심볼은 원화를 기준으로 작성되었습니다.
  * 필요할 경우 추가하도록 합니다.
  */
 @Getter
-public enum TickerSymbol {
+public enum MarketCode {
   // 비트코인
   KRW_BTC("KRW-BTC", 1),
   // 이더리움
@@ -19,7 +19,7 @@ public enum TickerSymbol {
   private final String symbol;
   private final double quantity;
 
-  TickerSymbol(String symbol, double quantity) {
+  MarketCode(String symbol, double quantity) {
     this.symbol = symbol;
     this.quantity = quantity;
   }
@@ -31,9 +31,9 @@ public enum TickerSymbol {
    * @return quantity
    */
   public static double getQuantityBySymbol(String symbol) {
-    for (TickerSymbol tickerSymbol : values()) {
-      if (tickerSymbol.getSymbol().equals(symbol)) {
-        return tickerSymbol.getQuantity();
+    for (MarketCode marketCode : values()) {
+      if (marketCode.getSymbol().equals(symbol)) {
+        return marketCode.getQuantity();
       }
     }
     throw new IllegalArgumentException("Invalid Ticker Symbol: " + symbol);

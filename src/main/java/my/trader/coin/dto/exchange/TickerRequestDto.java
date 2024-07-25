@@ -1,4 +1,4 @@
-package my.trader.coin.dto.order;
+package my.trader.coin.dto.exchange;
 
 import java.util.List;
 import lombok.Data;

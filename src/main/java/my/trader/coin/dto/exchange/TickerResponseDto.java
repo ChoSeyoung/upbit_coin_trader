@@ -1,4 +1,4 @@
-package my.trader.coin.dto.order;
+package my.trader.coin.dto.exchange;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

@@ -38,7 +38,7 @@ upbit.api.key=${your_api_key_here}
 upbit.secret.key=${your_secret_key_here}
 # 업비트 매수/매도 수수료율을 항상 확인하세요
 upbit.ratio.exchange=${platform_exchange_fee}
-# 업비트에서 본인이 거래하고싶은 티커심볼을 확인하고 설정합니다.
+# 업비트에서 본인이 거래하고싶은 마켓코드을 확인하고 설정합니다.
 upbit.ticker.symbol=${ticker_symbol}
 ```
 

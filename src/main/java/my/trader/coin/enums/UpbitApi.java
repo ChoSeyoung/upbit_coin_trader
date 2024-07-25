@@ -2,9 +2,6 @@ package my.trader.coin.enums;
 
 import lombok.Getter;
 
-/**
- * TickerSymbol 은 Upbit 에서 사용할 수 있는 다양한 API 의 집합체입니다.
- */
 @Getter
 public enum UpbitApi {
   // 전체계좌조회

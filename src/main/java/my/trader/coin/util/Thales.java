@@ -1,5 +1,7 @@
 package my.trader.coin.util;
 
+import java.util.List;
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.springframework.stereotype.Component;
 
 /**
@@ -39,5 +41,37 @@ public class Thales {
     double rawQuantity = minimumOrderAmount / currentPrice;
 
     return Math.ceil(rawQuantity * 10) / 10.0;
+  }
+
+  /**
+   * RSI 계산
+   *
+   * @param prices 가격 모음집
+   * @param period 기간
+   * @return RSI
+   */
+  public static double calculateRsi(List<Double> prices, int period) {
+    if (prices.size() < period + 1) {
+      throw new IllegalArgumentException("Not enough data points to calculate RSI");
+    }
+
+    double[] gains = new double[period];
+    double[] losses = new double[period];
+
+    for (int i = 1; i <= period; i++) {
+      double change = prices.get(i - 1) - prices.get(i);
+      if (change > 0) {
+        gains[i - 1] = change;
+      } else {
+        losses[i - 1] = -change;
+      }
+    }
+
+    Mean mean = new Mean();
+    double averageGain = mean.evaluate(gains);
+    double averageLoss = mean.evaluate(losses);
+
+    double rs = averageGain / averageLoss;
+    return 100 - (100 / (1 + rs));
   }
 }

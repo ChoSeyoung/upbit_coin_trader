@@ -1,8 +1,8 @@
 package my.trader.coin.controller;
 
 import java.util.Map;
-import my.trader.coin.dto.order.OrderManualRequestDto;
-import my.trader.coin.dto.order.OrderResponseDto;
+import my.trader.coin.dto.exchange.OrderManualRequestDto;
+import my.trader.coin.dto.exchange.OrderResponseDto;
 import my.trader.coin.enums.UpbitType;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.util.AuthorizationGenerator;
@@ -43,19 +43,13 @@ public class ManualController {
    */
   @PostMapping("/order")
   public OrderResponseDto buy(@RequestBody OrderManualRequestDto orderManualRequestDto) {
-    if (orderManualRequestDto.getSide().equals(UpbitType.ORDER_SIDE_BID.getType())) {
-      return upbitService.executeBuyOrder(
-            orderManualRequestDto.getTickerSymbol(),
-            orderManualRequestDto.getPrice(),
-            orderManualRequestDto.getQuantity()
-      );
-    } else {
-      return upbitService.executeSellOrder(
-            orderManualRequestDto.getTickerSymbol(),
-            orderManualRequestDto.getPrice(),
-            orderManualRequestDto.getQuantity()
-      );
-    }
+    String side = (orderManualRequestDto.getSide().equals(UpbitType.ORDER_SIDE_BID.getType())) ? UpbitType.ORDER_SIDE_BID.getType() : UpbitType.ORDER_SIDE_ASK.getType();
 
+    return upbitService.executeOrder(
+          orderManualRequestDto.getMarket(),
+          orderManualRequestDto.getPrice(),
+          orderManualRequestDto.getQuantity(),
+          side
+    );
   }
 }

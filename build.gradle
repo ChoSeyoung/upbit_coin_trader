@@ -40,6 +40,8 @@ dependencies {
     implementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.0'
     implementation 'org.glassfish.jaxb:jaxb-runtime:4.0.0'
     implementation 'com.auth0:java-jwt:4.2.1'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'org.apache.commons:commons-math3:3.6.1'
 
     // logging
     implementation 'org.slf4j:slf4j-api:2.0.9'
