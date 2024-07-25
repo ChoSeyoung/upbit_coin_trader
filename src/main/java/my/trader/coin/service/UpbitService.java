@@ -3,12 +3,9 @@ package my.trader.coin.service;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import my.trader.coin.dto.exchange.*;
 import my.trader.coin.dto.quotation.CandleResponseDto;
 import my.trader.coin.dto.quotation.CandleRequestDto;
@@ -18,8 +15,6 @@ import my.trader.coin.enums.ColorfulConsoleOutput;
 import my.trader.coin.enums.UpbitType;
 import my.trader.coin.util.AuthorizationGenerator;
 import my.trader.coin.util.Sejong;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ClientResponse;
@@ -46,7 +41,11 @@ public class UpbitService {
           .markets(String.join(",", markets))
           .build();
 
-    URI uri = buildUriWithParams("https://api.upbit.com/v1/ticker", tickerRequestDto);
+    String url = "https://api.upbit.com/v1/ticker";
+    String parameters = Sejong.createQueryString(tickerRequestDto);
+
+    URI uri = UriComponentsBuilder.fromHttpUrl(url + "?" + parameters).build().toUri();
+
     return performGetRequest(uri, TickerResponseDto.class);
   }
 
@@ -59,7 +58,12 @@ public class UpbitService {
           .price(price)
           .ordType(UpbitType.ORDER_TYPE_LIMIT.getType())
           .build();
-    URI uri = buildUriWithParams("https://api.upbit.com/v1/orders", orderRequestDto);
+
+    String url = "https://api.upbit.com/v1/orders";
+    String parameters = Sejong.createQueryString(orderRequestDto);
+
+    URI uri = UriComponentsBuilder.fromHttpUrl(url + "?" + parameters).build().toUri();
+
     String authorizationToken = authorizationGenerator.generateTokenWithParameter(orderRequestDto);
     return performPostRequest(uri, orderRequestDto, OrderResponseDto.class, authorizationToken);
   }
@@ -70,7 +74,11 @@ public class UpbitService {
           .count(count)
           .build();
 
-    URI uri = buildUriWithParams("https://api.upbit.com/v1/candles/minutes/1", candleRequestDto);
+    String url = "https://api.upbit.com/v1/candles/minutes/1";
+    String parameters = Sejong.createQueryString(candleRequestDto);
+
+    URI uri = UriComponentsBuilder.fromHttpUrl(url + "?" + parameters).build().toUri();
+
     List<CandleResponseDto> candleResponseDtos = performGetRequest(uri, CandleResponseDto.class);
     List<Double> closePrices = new ArrayList<>();
     for (CandleResponseDto candleResponseDto : candleResponseDtos) {
@@ -125,38 +133,6 @@ public class UpbitService {
             System.err.println("Error response: " + errorBody);
             return Mono.error(new RuntimeException("API call failed: " + errorBody));
           });
-  }
-
-  private URI buildUri(String baseUrl, Map<String, Object> queryParams) {
-    UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(baseUrl);
-    queryParams.forEach(uriBuilder::queryParam);
-    return uriBuilder.build().toUri();
-  }
-
-  public URI buildUriWithParams(String baseUrl, Object params) {
-    UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(baseUrl);
-    Field[] fields = params.getClass().getDeclaredFields();
-    for (Field field : fields) {
-      field.setAccessible(true);
-      try {
-        Object value = field.get(params);
-        if (value != null) {
-          String fieldName = Sejong.camelToSnakeCase(field.getName());
-          if (value.getClass().isArray()) {
-            int length = Array.getLength(value);
-            for (int i = 0; i < length; i++) {
-              Object arrayValue = Array.get(value, i);
-              uriBuilder.queryParam(fieldName + "[]", arrayValue);
-            }
-          } else {
-            uriBuilder.queryParam(fieldName, value);
-          }
-        }
-      } catch (IllegalAccessException e) {
-        throw new RuntimeException(e.getMessage());
-      }
-    }
-    return uriBuilder.build().toUri();
   }
 
   private <T> Mono<List<T>> parseJsonList(String json, Class<T> elementType) {

@@ -104,7 +104,6 @@ public class UpbitScheduler {
         logger.error("조회된 시장 데이터가 없습니다.");
       }
     } catch (Exception e) {
-      // 예외 발생 시 로그에 에러 메시지 출력
       logger.error("시장 데이터를 가져오는 중 오류 발생", e);
     } finally {
       ColorfulConsoleOutput.printWithColor(++schedulerExecutedCount + " set cleared",
@@ -135,7 +134,7 @@ public class UpbitScheduler {
       // 매수 주문 실행 성공 후 처리 프로세스
       if (result != null) {
         ColorfulConsoleOutput.printWithColor(
-              String.format("Successfully bought %s at price: %s", market, df.format(currentPrice)),
+              String.format("[%s] 매수 주문 발생: %s", market, df.format(currentPrice)),
               ColorfulConsoleOutput.RED
         );
 
@@ -164,7 +163,7 @@ public class UpbitScheduler {
       // 매도 주문 실행 성공 후 처리 프로세스
       if (result != null) {
         ColorfulConsoleOutput.printWithColor(
-              String.format("Successfully sold %s at price: %s", market,
+              String.format("[%s] 매도 주문 발생: %s", market,
                     df.format(currentPrice)),
               ColorfulConsoleOutput.BLUE
         );

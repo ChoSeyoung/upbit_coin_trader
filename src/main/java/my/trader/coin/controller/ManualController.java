@@ -42,14 +42,12 @@ public class ManualController {
    * 매수/매도 수동 조작.
    */
   @PostMapping("/order")
-  public OrderResponseDto buy(@RequestBody OrderManualRequestDto orderManualRequestDto) {
-    String side = (orderManualRequestDto.getSide().equals(UpbitType.ORDER_SIDE_BID.getType())) ? UpbitType.ORDER_SIDE_BID.getType() : UpbitType.ORDER_SIDE_ASK.getType();
-
+  public OrderResponseDto order(@RequestBody OrderManualRequestDto orderManualRequestDto) {
     return upbitService.executeOrder(
           orderManualRequestDto.getMarket(),
           orderManualRequestDto.getPrice(),
           orderManualRequestDto.getQuantity(),
-          side
+          orderManualRequestDto.getSide()
     );
   }
 }

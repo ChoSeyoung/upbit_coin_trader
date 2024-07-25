@@ -30,7 +30,7 @@ public class Thales {
   }
 
   /**
-   * 최소 주문 금액 맞춰진 수량 조회
+   * 소수점 8자리까지 계산하고 그 뒤는 절사하며, 소수점 8자리에서 무조건 올림 처리합니다.
    *
    * @param minimumOrderAmount 최소 주문금액
    * @param currentPrice       현재가격
@@ -39,8 +39,9 @@ public class Thales {
   public static double calculateMinimumOrderQuantity(double minimumOrderAmount,
                                                      double currentPrice) {
     double rawQuantity = minimumOrderAmount / currentPrice;
-
-    return Math.ceil(rawQuantity * 10) / 10.0;
+    // 소수점 8자리까지 자른 후 올림 처리
+    double truncatedQuantity = Math.floor(rawQuantity * Math.pow(10, 8)) / Math.pow(10, 8);
+    return Math.ceil(truncatedQuantity * Math.pow(10, 8)) / Math.pow(10, 8);
   }
 
   /**

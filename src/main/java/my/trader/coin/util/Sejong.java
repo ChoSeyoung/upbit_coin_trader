@@ -38,7 +38,7 @@ public class Sejong {
    * @param dto DTO 객체
    * @return 쿼리 스트링
    */
-  public <T> String createQueryString(T dto) {
+  public static <T> String createQueryString(T dto) {
     Map<String, Object> params = new HashMap<>();
 
     if (dto instanceof Map<?, ?> map) {
@@ -70,7 +70,7 @@ public class Sejong {
           .collect(Collectors.joining("&"));
   }
 
-  private void processValueForCreateQueryString(Map<String, Object> params, String fieldName,
+  private static void processValueForCreateQueryString(Map<String, Object> params, String fieldName,
                                                 Object value) {
     if (value.getClass().isArray()) {
       int length = Array.getLength(value);
