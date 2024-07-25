@@ -20,7 +20,7 @@ public class Sejong {
    * @param camelCase 카멜 케이스 문자열
    * @return 스네이크 케이스 문자열
    */
-  public String camelToSnakeCase(String camelCase) {
+  public static String camelToSnakeCase(String camelCase) {
     StringBuilder result = new StringBuilder();
     for (char character : camelCase.toCharArray()) {
       if (Character.isUpperCase(character)) {
@@ -44,7 +44,7 @@ public class Sejong {
     if (dto instanceof Map<?, ?> map) {
       for (Map.Entry<?, ?> entry : map.entrySet()) {
         if (entry.getKey() instanceof String key && entry.getValue() != null) {
-          String fieldName = this.camelToSnakeCase(key);
+          String fieldName = Sejong.camelToSnakeCase(key);
           processValueForCreateQueryString(params, fieldName, entry.getValue());
         }
       }
@@ -54,7 +54,7 @@ public class Sejong {
         try {
           Object value = field.get(dto);
           if (value != null) {
-            String fieldName = this.camelToSnakeCase(field.getName());
+            String fieldName = Sejong.camelToSnakeCase(field.getName());
             processValueForCreateQueryString(params, fieldName, value);
           }
         } catch (IllegalAccessException e) {

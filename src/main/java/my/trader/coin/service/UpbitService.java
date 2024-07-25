@@ -3,6 +3,7 @@ package my.trader.coin.service;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
@@ -11,6 +12,9 @@ import java.util.Map;
 import my.trader.coin.dto.exchange.*;
 import my.trader.coin.dto.quotation.CandleResponseDto;
 import my.trader.coin.dto.quotation.CandleRequestDto;
+import my.trader.coin.dto.quotation.TickerRequestDto;
+import my.trader.coin.dto.quotation.TickerResponseDto;
+import my.trader.coin.enums.ColorfulConsoleOutput;
 import my.trader.coin.enums.UpbitType;
 import my.trader.coin.util.AuthorizationGenerator;
 import my.trader.coin.util.Sejong;
@@ -25,25 +29,24 @@ import reactor.core.publisher.Mono;
 
 @Service
 public class UpbitService {
-  private static final Logger logger = LoggerFactory.getLogger(UpbitService.class);
   private final WebClient webClient;
   private final ObjectMapper objectMapper;
   private final AuthorizationGenerator authorizationGenerator;
-  private final Sejong sejong;
 
   public UpbitService(WebClient.Builder webClientBuilder,
-                      AuthorizationGenerator authorizationGenerator,
-                      Sejong sejong) {
+                      AuthorizationGenerator authorizationGenerator) {
     this.webClient = webClientBuilder.build();
     this.objectMapper = new ObjectMapper();
     this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     this.authorizationGenerator = authorizationGenerator;
-    this.sejong = sejong;
   }
 
   public List<TickerResponseDto> getTicker(List<String> markets) {
-    URI uri =
-          buildUri("https://api.upbit.com/v1/ticker", Map.of("markets", String.join(",", markets)));
+    TickerRequestDto tickerRequestDto = TickerRequestDto.builder()
+          .markets(String.join(",", markets))
+          .build();
+
+    URI uri = buildUriWithParams("https://api.upbit.com/v1/ticker", tickerRequestDto);
     return performGetRequest(uri, TickerResponseDto.class);
   }
 
@@ -77,6 +80,8 @@ public class UpbitService {
   }
 
   private <T> List<T> performGetRequest(URI uri, Class<T> responseType) {
+    ColorfulConsoleOutput.printWithColor("Request Uri: " + uri, ColorfulConsoleOutput.PURPLE);
+
     return webClient.get()
           .uri(uri)
           .header("Content-Type", "application/json; charset=utf-8")
@@ -88,6 +93,8 @@ public class UpbitService {
   }
 
   private <T> List<T> performGetRequest(URI uri, Class<T> responseType, String authorizationToken) {
+    ColorfulConsoleOutput.printWithColor("Request Uri: " + uri, ColorfulConsoleOutput.PURPLE);
+
     return webClient.get()
           .uri(uri)
           .header("Content-Type", "application/json; charset=utf-8")
@@ -123,10 +130,10 @@ public class UpbitService {
   private URI buildUri(String baseUrl, Map<String, Object> queryParams) {
     UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(baseUrl);
     queryParams.forEach(uriBuilder::queryParam);
-    return uriBuilder.build().encode().toUri();
+    return uriBuilder.build().toUri();
   }
 
-  private URI buildUriWithParams(String baseUrl, Object params) {
+  public URI buildUriWithParams(String baseUrl, Object params) {
     UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(baseUrl);
     Field[] fields = params.getClass().getDeclaredFields();
     for (Field field : fields) {
@@ -134,14 +141,22 @@ public class UpbitService {
       try {
         Object value = field.get(params);
         if (value != null) {
-          String fieldName = sejong.camelToSnakeCase(field.getName());
-          uriBuilder.queryParam(fieldName, value);
+          String fieldName = Sejong.camelToSnakeCase(field.getName());
+          if (value.getClass().isArray()) {
+            int length = Array.getLength(value);
+            for (int i = 0; i < length; i++) {
+              Object arrayValue = Array.get(value, i);
+              uriBuilder.queryParam(fieldName + "[]", arrayValue);
+            }
+          } else {
+            uriBuilder.queryParam(fieldName, value);
+          }
         }
       } catch (IllegalAccessException e) {
         throw new RuntimeException(e.getMessage());
       }
     }
-    return uriBuilder.build().encode().toUri();
+    return uriBuilder.build().toUri();
   }
 
   private <T> Mono<List<T>> parseJsonList(String json, Class<T> elementType) {

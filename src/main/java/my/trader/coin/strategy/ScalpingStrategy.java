@@ -1,6 +1,7 @@
 package my.trader.coin.strategy;
 
 import java.util.List;
+import my.trader.coin.enums.ColorfulConsoleOutput;
 import my.trader.coin.enums.Signal;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.util.Thales;
@@ -25,6 +26,8 @@ public class ScalpingStrategy {
    * @return 매수 결정시 true
    */
   public Signal shouldBuy(String market) {
+    ColorfulConsoleOutput.printWithColor("매수 의사결정을 위한 가격 확인", ColorfulConsoleOutput.RED);
+
     List<Double> closePrices = upbitService.getClosePrices(market, 15);
 
     double rsi = Thales.calculateRsi(closePrices, 14);
@@ -39,6 +42,8 @@ public class ScalpingStrategy {
    * @return 매도 결정시 true
    */
   public Signal shouldSell(String market) {
+    ColorfulConsoleOutput.printWithColor("매도 의사결정을 위한 가격 확인", ColorfulConsoleOutput.BLUE);
+
     List<Double> closePrices = upbitService.getClosePrices(market, 15);
 
     double rsi = Thales.calculateRsi(closePrices, 14);

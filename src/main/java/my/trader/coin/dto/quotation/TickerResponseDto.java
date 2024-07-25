@@ -1,4 +1,4 @@
-package my.trader.coin.dto.exchange;
+package my.trader.coin.dto.quotation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

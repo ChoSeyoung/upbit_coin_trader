@@ -1,12 +1,11 @@
 package my.trader.coin.scheduler;
 
 import java.text.DecimalFormat;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import my.trader.coin.dto.exchange.OrderResponseDto;
-import my.trader.coin.dto.exchange.TickerResponseDto;
+import my.trader.coin.dto.quotation.TickerResponseDto;
 import my.trader.coin.enums.*;
 import my.trader.coin.model.Config;
 import my.trader.coin.service.ConfigService;
@@ -37,6 +36,8 @@ public class UpbitScheduler {
 
   @Value("${upbit.minimum.order.amount}")
   private double minimumOrderAmount;
+
+  private int schedulerExecutedCount = 0;
 
   private final UpbitService upbitService;
   private final ScalpingStrategy scalpingStrategy;
@@ -83,23 +84,21 @@ public class UpbitScheduler {
       // 첫 번째 티커 데이터를 사용
       if (tickerDataList != null && !tickerDataList.isEmpty()) {
         for (TickerResponseDto tickerData : tickerDataList) {
+          // 현재 마켓코드
+          String market = tickerData.getMarket();
           // 현재 가격
           Double currentPrice = tickerData.getTradePrice();
-          // 현재 거래량
-          Double currentVolume = tickerData.getAccTradeVolume24h();
 
-          // 현재 가격 및 거래량 로깅
+          // 현재 가격 로깅
           ColorfulConsoleOutput.printWithColor(
-                String.format("[%s] Current Price & Volume: %s / %s",
-                      tickerData.getMarket(),
-                      df.format(currentPrice),
-                      df.format(currentVolume)
-                ),
+                String.format("[%s] Current Price: %s", market, df.format(currentPrice)),
                 ColorfulConsoleOutput.YELLOW
           );
 
           // 스캘핑 전략을 실행하여 매수 또는 매도 결정을 내림
-          executeScalpingStrategy(tickerData.getMarket(), currentPrice);
+          executeScalpingStrategy(market, currentPrice);
+
+          ColorfulConsoleOutput.printWithColor("-------------", ColorfulConsoleOutput.CYAN);
         }
       } else {
         logger.error("조회된 시장 데이터가 없습니다.");
@@ -107,6 +106,9 @@ public class UpbitScheduler {
     } catch (Exception e) {
       // 예외 발생 시 로그에 에러 메시지 출력
       logger.error("시장 데이터를 가져오는 중 오류 발생", e);
+    } finally {
+      ColorfulConsoleOutput.printWithColor(++schedulerExecutedCount + " set cleared",
+            ColorfulConsoleOutput.CYAN);
     }
   }
 
@@ -123,9 +125,10 @@ public class UpbitScheduler {
     // 주문 수량 계산
     double quantity = Thales.calculateMinimumOrderQuantity(minimumOrderAmount, currentPrice);
 
+    // 매수 시그널 확인
     Signal buySignal = scalpingStrategy.shouldBuy(market);
+    // 매수 신호가 발생하면 매수 로직 실행
     if (buySignal.isBuySignal()) {
-      // 매수 신호가 발생하면 매수 로직 실행
       OrderResponseDto result =
             upbitService.executeOrder(market, currentPrice, quantity, UpbitType.ORDER_SIDE_BID.getType());
 
