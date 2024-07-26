@@ -27,12 +27,6 @@ public class AuthorizationGenerator {
   @Value("${upbit.secret.key}")
   private String secretKey;
 
-  private final Sejong sejong;
-
-  public AuthorizationGenerator(Sejong sejong) {
-    this.sejong = sejong;
-  }
-
   /**
    * 파라미터가 없을 경우 Authorization 값 조회.
    *
@@ -58,7 +52,7 @@ public class AuthorizationGenerator {
     String jwtToken = null;
 
     try {
-      String queryString = sejong.createQueryString(dto);
+      String queryString = CharacterUtility.createQueryString(dto);
 
       MessageDigest md = MessageDigest.getInstance("SHA-512");
       md.update(queryString.getBytes(StandardCharsets.UTF_8));

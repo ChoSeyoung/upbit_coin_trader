@@ -18,3 +18,5 @@ spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
 
 spring.jackson.property-naming-strategy=SNAKE_CASE
+
+spring.main.allow-bean-definition-overriding=true

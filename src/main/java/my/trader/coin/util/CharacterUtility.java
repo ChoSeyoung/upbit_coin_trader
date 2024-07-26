@@ -9,11 +9,11 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 /**
- * 우리의 세종은 문자와 관련된 내용을 처리해주는 메서드들의 집합체입니다.
+ * 문자와 관련된 내용을 처리해주는 메서드들의 집합체입니다.
  * <a href="https://ko.wikipedia.org/wiki/%EC%84%B8%EC%A2%85">...</a>
  */
 @Component
-public class Sejong {
+public class CharacterUtility {
   /**
    * 카멜 케이스를 스네이크 케이스로 변환.
    *
@@ -44,7 +44,7 @@ public class Sejong {
     if (dto instanceof Map<?, ?> map) {
       for (Map.Entry<?, ?> entry : map.entrySet()) {
         if (entry.getKey() instanceof String key && entry.getValue() != null) {
-          String fieldName = Sejong.camelToSnakeCase(key);
+          String fieldName = CharacterUtility.camelToSnakeCase(key);
           processValueForCreateQueryString(params, fieldName, entry.getValue());
         }
       }
@@ -54,7 +54,7 @@ public class Sejong {
         try {
           Object value = field.get(dto);
           if (value != null) {
-            String fieldName = Sejong.camelToSnakeCase(field.getName());
+            String fieldName = CharacterUtility.camelToSnakeCase(field.getName());
             processValueForCreateQueryString(params, fieldName, value);
           }
         } catch (IllegalAccessException e) {

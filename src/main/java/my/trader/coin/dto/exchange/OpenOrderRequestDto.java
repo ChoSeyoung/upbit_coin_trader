@@ -27,11 +27,11 @@ public class OpenOrderRequestDto {
   private List<String> states = List.of("wait");
 
   @Min(value = 1, message = "Page must be at least 1")
-  private int page = 1;
+  private Integer page = 1;
 
   @Min(value = 1, message = "Limit must be at least 1")
   @Max(value = 100, message = "Limit must be at most 100")
-  private int limit = 100;
+  private Integer limit = 100;
 
   @NotEmpty(message = "Order by cannot be empty")
   private String orderBy = "desc";

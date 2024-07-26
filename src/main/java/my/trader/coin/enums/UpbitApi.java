@@ -4,15 +4,17 @@ import lombok.Getter;
 
 @Getter
 public enum UpbitApi {
-  // 전체계좌조회
-  RESET("/v1/accounts"),
-  // 주문하기
-  ORDERS("v1/orders");
+  GET_ACCOUNT("https://api.upbit.com/v1/accounts"),
+  GET_TICKER("https://api.upbit.com/v1/ticker"),
+  POST_ORDER("https://api.upbit.com/v1/orders"),
+  GET_MINUTE_CANDLE("https://api.upbit.com/v1/candles/minutes/1"),
+  GET_OPEN_ORDER("https://api.upbit.com/v1/orders/open"),
+  DELETE_CANCEL_ORDER("https://api.upbit.com/v1/order");
 
   private final String url;
 
   UpbitApi(String url) {
-    this.url = String.format("https://api.upbit.com%s", url);
+    this.url = url;
   }
 }
 

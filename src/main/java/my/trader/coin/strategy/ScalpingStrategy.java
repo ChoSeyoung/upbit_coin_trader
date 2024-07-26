@@ -5,10 +5,9 @@ import java.util.Optional;
 import my.trader.coin.dto.exchange.AccountResponseDto;
 import my.trader.coin.enums.ColorfulConsoleOutput;
 import my.trader.coin.enums.Signal;
-import my.trader.coin.model.Config;
 import my.trader.coin.service.ConfigService;
 import my.trader.coin.service.UpbitService;
-import my.trader.coin.util.Thales;
+import my.trader.coin.util.MathUtility;
 import org.springframework.stereotype.Service;
 
 /**
@@ -36,7 +35,7 @@ public class ScalpingStrategy {
 
     List<Double> closePrices = upbitService.getClosePrices(market, 15);
 
-    double rsi = Thales.calculateRsi(closePrices, 14);
+    double rsi = MathUtility.calculateRsi(closePrices, 14);
 
     return (rsi < 25) ? Signal.BUY : Signal.NO_ACTION;
   }
@@ -52,7 +51,7 @@ public class ScalpingStrategy {
 
     List<Double> closePrices = upbitService.getClosePrices(market, 15);
 
-    double rsi = Thales.calculateRsi(closePrices, 14);
+    double rsi = MathUtility.calculateRsi(closePrices, 14);
 
     String currency = market.split("-")[1];
     List<AccountResponseDto> accounts = upbitService.getAccount();
@@ -63,16 +62,25 @@ public class ScalpingStrategy {
 
     if (target.isPresent()) {
       AccountResponseDto account = target.get();
-      Double avgBuyPrice = account.getAvgBuyPrice();
 
-      double profitRate = ((currentPrice - avgBuyPrice) / avgBuyPrice) * 100;
-
+      // 익절 목표 퍼센티지
       double targetProfit = Double.parseDouble(
             configService.getConfByName("take_profit_percentage").getVal()
       );
+      // 거래소 수수료
+      double exchangeFeeRatio = Double.parseDouble(
+            configService.getConfByName("exchange_fee_ratio").getVal()
+      );
 
-      return (rsi > 75 || profitRate > targetProfit) ? Signal.TAKE_PROFIT : Signal.NO_ACTION;
+      // 보유 암호화폐 평균 매수가
+      Double avgBuyPrice = account.getAvgBuyPrice() * exchangeFeeRatio;
+      // 현재 수익률 계산
+      double profitRate = ((currentPrice - avgBuyPrice) / avgBuyPrice) * 100;
+
+      // RSI 70선 이상이면서 익절목표 금액에 도달한경우 매도 신호 발생
+      return (rsi >= 70 && profitRate > targetProfit) ? Signal.TAKE_PROFIT : Signal.NO_ACTION;
     }
+
     return Signal.NO_ACTION;
   }
 }

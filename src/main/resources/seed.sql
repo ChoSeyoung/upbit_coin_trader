@@ -12,6 +12,6 @@ VALUES ('whole_sell_when_profit', 'true');
 INSERT INTO configs (name, val)
 VALUES ('scheduled_market', 'KRW-BTC, KRW-XRP, KRW-ETH');
 INSERT INTO configs (name, val)
-VALUES ('exchange_fee_percentage', '0.05');
+VALUES ('exchange_fee_ratio', '1.0005');
 INSERT INTO configs (name, val)
-VALUES ('take_profit_percentage', '1');
+VALUES ('take_profit_percentage', '1.0');

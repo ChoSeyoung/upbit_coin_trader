@@ -4,6 +4,7 @@ import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import my.trader.coin.dto.exchange.CancelOrderResponseDto;
 import my.trader.coin.dto.exchange.OrderResponseDto;
 import my.trader.coin.dto.quotation.TickerResponseDto;
 import my.trader.coin.enums.*;
@@ -12,7 +13,8 @@ import my.trader.coin.service.ConfigService;
 import my.trader.coin.service.InventoryService;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.strategy.ScalpingStrategy;
-import my.trader.coin.util.Thales;
+import my.trader.coin.util.MathUtility;
+import my.trader.coin.util.TimeUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -73,7 +75,8 @@ public class UpbitScheduler {
   @Scheduled(cron = "0 * * * * *") // 매 분 0초에 실행
   public void fetchMarketData() {
     try {
-      Config scheduledMarketConfig = configService.getConfByName(CacheKey.SCHEDULED_MARKET.getKey());
+      Config scheduledMarketConfig =
+            configService.getConfByName(CacheKey.SCHEDULED_MARKET.getKey());
 
       List<String> markets = Stream.of(scheduledMarketConfig.getVal().split(","))
             .collect(Collectors.toCollection(ArrayList::new));
@@ -99,7 +102,7 @@ public class UpbitScheduler {
           executeScalpingStrategy(market, currentPrice);
 
           ColorfulConsoleOutput.printWithColor("-------------", ColorfulConsoleOutput.CYAN);
-          sleep(1);
+          TimeUtility.sleep(1);
         }
       } else {
         logger.error("조회된 시장 데이터가 없습니다.");
@@ -107,16 +110,17 @@ public class UpbitScheduler {
     } catch (Exception e) {
       logger.error("시장 데이터를 가져오는 중 오류 발생", e);
     } finally {
+      TimeUtility.sleep(1);
+
+      List<CancelOrderResponseDto> results = upbitService.afterTaskCompletion();
+
+      if (!results.isEmpty()) {
+        ColorfulConsoleOutput.printWithColor("매수/매도 주문 잔여 수량 취소 작업 진행 완료",
+              ColorfulConsoleOutput.GREEN);
+      }
+
       ColorfulConsoleOutput.printWithColor(++schedulerExecutedCount + " set cleared",
             ColorfulConsoleOutput.CYAN);
-    }
-  }
-
-  private void sleep(long sec) {
-    try {
-      Thread.sleep(sec * 1000);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
     }
   }
 
@@ -131,14 +135,15 @@ public class UpbitScheduler {
     Double inventory = inventoryService.getQuantityByMarket(market);
 
     // 주문 수량 계산
-    double quantity = Thales.calculateMinimumOrderQuantity(minimumOrderAmount, currentPrice);
+    double quantity = MathUtility.calculateMinimumOrderQuantity(minimumOrderAmount, currentPrice);
 
     // 매수 시그널 확인
     Signal buySignal = scalpingStrategy.shouldBuy(market);
     // 매수 신호가 발생하면 매수 로직 실행
     if (buySignal.isBuySignal()) {
       OrderResponseDto result =
-            upbitService.executeOrder(market, currentPrice, quantity, UpbitType.ORDER_SIDE_BID.getType());
+            upbitService.executeOrder(market, currentPrice, quantity,
+                  UpbitType.ORDER_SIDE_BID.getType());
 
       // 매수 주문 실행 성공 후 처리 프로세스
       if (result != null) {
