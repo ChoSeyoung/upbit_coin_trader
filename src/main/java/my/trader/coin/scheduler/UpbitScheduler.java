@@ -138,6 +138,7 @@ public class UpbitScheduler {
     double quantity = MathUtility.calculateMinimumOrderQuantity(minimumOrderAmount, currentPrice);
 
     // 매수 시그널 확인
+    TimeUtility.sleep(1);
     Signal buySignal = scalpingStrategy.shouldBuy(market);
     // 매수 신호가 발생하면 매수 로직 실행
     if (buySignal.isBuySignal()) {
@@ -157,6 +158,8 @@ public class UpbitScheduler {
       }
     }
 
+    // 매도 시그널 확인
+    TimeUtility.sleep(1);
     Signal sellSignal = scalpingStrategy.shouldSell(market, currentPrice);
     if (sellSignal.isSellSignal()) {
       // 전량 매도 플래그 활성화시 익절 시그널 발생되면 전량 매도
@@ -170,6 +173,7 @@ public class UpbitScheduler {
       }
 
       // 매도 신호가 발생하면 매도 로직 실행
+      TimeUtility.sleep(1);
       OrderResponseDto result =
             upbitService.executeOrder(market, currentPrice, quantity,
                   UpbitType.ORDER_SIDE_ASK.getType());

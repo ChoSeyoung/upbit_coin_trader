@@ -3,6 +3,7 @@ package my.trader.coin.strategy;
 import java.util.List;
 import java.util.Optional;
 import my.trader.coin.dto.exchange.AccountResponseDto;
+import my.trader.coin.enums.CacheKey;
 import my.trader.coin.enums.ColorfulConsoleOutput;
 import my.trader.coin.enums.Signal;
 import my.trader.coin.service.ConfigService;
@@ -49,9 +50,9 @@ public class ScalpingStrategy {
   public Signal shouldSell(String market, Double currentPrice) {
     ColorfulConsoleOutput.printWithColor("매도 의사결정을 위한 가격 확인", ColorfulConsoleOutput.BLUE);
 
-    List<Double> closePrices = upbitService.getClosePrices(market, 15);
-
-    double rsi = MathUtility.calculateRsi(closePrices, 14);
+    // TODO. RSI 기준으로 매도 작업을 진행하게 되는 경우 아래 코드를 참고하세요
+    // List<Double> closePrices = upbitService.getClosePrices(market, 15);
+    // double rsi = MathUtility.calculateRsi(closePrices, 14);
 
     String currency = market.split("-")[1];
     List<AccountResponseDto> accounts = upbitService.getAccount();
@@ -65,11 +66,11 @@ public class ScalpingStrategy {
 
       // 익절 목표 퍼센티지
       double targetProfit = Double.parseDouble(
-            configService.getConfByName("take_profit_percentage").getVal()
+            configService.getConfByName(CacheKey.TAKE_PROFIT_PERCENTAGE.getKey()).getVal()
       );
       // 거래소 수수료
       double exchangeFeeRatio = Double.parseDouble(
-            configService.getConfByName("exchange_fee_ratio").getVal()
+            configService.getConfByName(CacheKey.EXCHANGE_FEE_RATIO.getKey()).getVal()
       );
 
       // 보유 암호화폐 평균 매수가
@@ -78,7 +79,7 @@ public class ScalpingStrategy {
       double profitRate = ((currentPrice - avgBuyPrice) / avgBuyPrice) * 100;
 
       // RSI 70선 이상이면서 익절목표 금액에 도달한경우 매도 신호 발생
-      return (rsi >= 70 && profitRate > targetProfit) ? Signal.TAKE_PROFIT : Signal.NO_ACTION;
+      return (profitRate > targetProfit) ? Signal.TAKE_PROFIT : Signal.NO_ACTION;
     }
 
     return Signal.NO_ACTION;
