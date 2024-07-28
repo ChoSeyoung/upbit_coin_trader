@@ -17,7 +17,6 @@ import my.trader.coin.util.MathUtility;
 import my.trader.coin.util.TimeUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -27,17 +26,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class UpbitScheduler {
   private static final Logger logger = LoggerFactory.getLogger(UpbitScheduler.class);
-
-  // 거래수수료
-  @Value("${upbit.ratio.exchange}")
-  private double exchangeFeeRatio;
-
-  // 시뮬레이션 모드 플래그
-  @Value("${simulation.mode}")
-  private boolean simulationMode;
-
-  @Value("${upbit.minimum.order.amount}")
-  private double minimumOrderAmount;
 
   private int schedulerExecutedCount = 0;
 
@@ -74,6 +62,13 @@ public class UpbitScheduler {
    */
   @Scheduled(cron = "0 * * * * *") // 매 분 0초에 실행
   public void fetchMarketData() {
+    // 스케줄러 실행전 미체결된 매도 주문 취소 접수
+    List<CancelOrderResponseDto> cancelSellOrders = upbitService.beforeTaskExecution();
+    if (!cancelSellOrders.isEmpty()) {
+      ColorfulConsoleOutput.printWithColor("매도 주문 잔여 수량 취소 작업 진행 완료",
+            ColorfulConsoleOutput.GREEN);
+    }
+
     try {
       Config scheduledMarketConfig =
             configService.getConfByName(CacheKey.SCHEDULED_MARKET.getKey());
@@ -113,9 +108,8 @@ public class UpbitScheduler {
       TimeUtility.sleep(1);
 
       List<CancelOrderResponseDto> results = upbitService.afterTaskCompletion();
-
       if (!results.isEmpty()) {
-        ColorfulConsoleOutput.printWithColor("매수/매도 주문 잔여 수량 취소 작업 진행 완료",
+        ColorfulConsoleOutput.printWithColor("매수 주문 잔여 수량 취소 작업 진행 완료",
               ColorfulConsoleOutput.GREEN);
       }
 
@@ -135,7 +129,10 @@ public class UpbitScheduler {
     Double inventory = inventoryService.getQuantityByMarket(market);
 
     // 주문 수량 계산
-    double quantity = MathUtility.calculateMinimumOrderQuantity(minimumOrderAmount, currentPrice);
+    Double minimumOrderAmount = Double.parseDouble(
+          configService.getConfByName(CacheKey.MIN_ORDER_AMOUNT.getKey()).getVal()
+    );
+    Double quantity = MathUtility.calculateMinimumOrderQuantity(minimumOrderAmount, currentPrice);
 
     // 매수 시그널 확인
     TimeUtility.sleep(1);
@@ -173,21 +170,24 @@ public class UpbitScheduler {
       }
 
       // 매도 신호가 발생하면 매도 로직 실행
+      // 매도금액은 최소주문 금액보다 많아야 처리 가능(업비트 정책)
       TimeUtility.sleep(1);
-      OrderResponseDto result =
-            upbitService.executeOrder(market, currentPrice, quantity,
-                  UpbitType.ORDER_SIDE_ASK.getType());
+      if (currentPrice * quantity > minimumOrderAmount) {
+        OrderResponseDto result =
+              upbitService.executeOrder(market, currentPrice, quantity,
+                    UpbitType.ORDER_SIDE_ASK.getType());
 
-      // 매도 주문 실행 성공 후 처리 프로세스
-      if (result != null) {
-        ColorfulConsoleOutput.printWithColor(
-              String.format("[%s] 매도 주문 발생: %s", market,
-                    df.format(currentPrice)),
-              ColorfulConsoleOutput.BLUE
-        );
+        // 매도 주문 실행 성공 후 처리 프로세스
+        if (result != null) {
+          ColorfulConsoleOutput.printWithColor(
+                String.format("[%s] 매도 주문 발생: %s", market,
+                      df.format(currentPrice)),
+                ColorfulConsoleOutput.BLUE
+          );
 
-        // 계좌정보 업데이트
-        inventoryService.saveQuantity(TradeType.SELL, market, quantity);
+          // 계좌정보 업데이트
+          inventoryService.saveQuantity(TradeType.SELL, market, quantity);
+        }
       }
     }
   }

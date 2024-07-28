@@ -1,0 +1,22 @@
+###
+### JWT 발급
+POST http://localhost:8080/init/jwt
+Content-Type: application/json
+
+{
+  "end_time":"2024-06-16T22:59:59+09:00",
+  "limit":"1000",
+  "order_by":"desc",
+  "start_time":"2024-06-16T22:00:00+09:00",
+  "state":"done",
+  "states":""
+}
+
+###
+### 마감 데이터 생성
+POST http://localhost:8080/init/orders/closed
+Content-Type: application/json
+
+{}
+
+###

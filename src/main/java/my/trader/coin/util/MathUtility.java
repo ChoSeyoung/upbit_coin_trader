@@ -36,8 +36,8 @@ public class MathUtility {
    * @param currentPrice       현재가격
    * @return 최소주문수량
    */
-  public static double calculateMinimumOrderQuantity(double minimumOrderAmount,
-                                                     double currentPrice) {
+  public static Double calculateMinimumOrderQuantity(Double minimumOrderAmount,
+                                                     Double currentPrice) {
     return minimumOrderAmount / currentPrice;
   }
 

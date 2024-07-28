@@ -1,6 +1,5 @@
 package my.trader.coin.repository;
 
-import java.util.Optional;
 import my.trader.coin.model.Config;
 import org.springframework.data.jpa.repository.JpaRepository;
 

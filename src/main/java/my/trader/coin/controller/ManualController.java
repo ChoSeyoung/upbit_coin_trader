@@ -1,9 +1,8 @@
 package my.trader.coin.controller;
 
+import java.util.List;
 import java.util.Map;
-import my.trader.coin.dto.exchange.OrderManualRequestDto;
-import my.trader.coin.dto.exchange.OrderResponseDto;
-import my.trader.coin.enums.UpbitType;
+import my.trader.coin.dto.exchange.ClosedOrderResponseDto;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.util.AuthorizationGenerator;
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +27,7 @@ public class ManualController {
    * @param requestBody 파라미터
    * @return jwt
    */
-  @PostMapping("/jwt")
+  @PostMapping("/init/jwt")
   public String getJwtWithParameter(
         @RequestBody(required = false) Map<String, Object> requestBody) {
     if (requestBody == null) {
@@ -38,16 +37,8 @@ public class ManualController {
     }
   }
 
-  /**
-   * 매수/매도 수동 조작.
-   */
-  @PostMapping("/order")
-  public OrderResponseDto order(@RequestBody OrderManualRequestDto orderManualRequestDto) {
-    return upbitService.executeOrder(
-          orderManualRequestDto.getMarket(),
-          orderManualRequestDto.getPrice(),
-          orderManualRequestDto.getQuantity(),
-          orderManualRequestDto.getSide()
-    );
+  @PostMapping("/init/orders/closed")
+  public List<ClosedOrderResponseDto> initClosedOrders() {
+    return upbitService.initializeClosedOrders();
   }
 }

@@ -9,6 +9,7 @@ public enum UpbitApi {
   POST_ORDER("https://api.upbit.com/v1/orders"),
   GET_MINUTE_CANDLE("https://api.upbit.com/v1/candles/minutes/1"),
   GET_OPEN_ORDER("https://api.upbit.com/v1/orders/open"),
+  GET_CLOSED_ORDER("https://api.upbit.com/v1/orders/closed"),
   DELETE_CANCEL_ORDER("https://api.upbit.com/v1/order");
 
   private final String url;

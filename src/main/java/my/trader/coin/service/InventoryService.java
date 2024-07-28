@@ -1,5 +1,6 @@
 package my.trader.coin.service;
 
+import jakarta.transaction.Transactional;
 import java.util.List;
 import my.trader.coin.enums.TradeType;
 import my.trader.coin.model.Inventory;
@@ -14,6 +15,7 @@ public class InventoryService {
     this.inventoryRepository = inventoryRepository;
   }
 
+  @Transactional
   public void saveQuantity(TradeType tradeType, String market, Double quantity) {
     Inventory inventory = inventoryRepository.findById(market).orElse(new Inventory());
     inventory.setMarket(market);

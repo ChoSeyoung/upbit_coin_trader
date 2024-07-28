@@ -78,6 +78,11 @@ public class ScalpingStrategy {
       // 현재 수익률 계산
       double profitRate = ((currentPrice - avgBuyPrice) / avgBuyPrice) * 100;
 
+      // 현재수익률/목표수익률 로깅
+      ColorfulConsoleOutput.printWithColor(
+            String.format("현재수익률/목표수익률 : %s/%s", profitRate, targetProfit),
+            ColorfulConsoleOutput.BLUE);
+
       // RSI 70선 이상이면서 익절목표 금액에 도달한경우 매도 신호 발생
       return (profitRate > targetProfit) ? Signal.TAKE_PROFIT : Signal.NO_ACTION;
     }

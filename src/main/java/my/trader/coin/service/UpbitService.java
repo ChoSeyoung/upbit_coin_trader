@@ -1,6 +1,11 @@
 package my.trader.coin.service;
 
 import java.net.URI;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import my.trader.coin.dto.exchange.*;
@@ -13,6 +18,7 @@ import my.trader.coin.enums.UpbitType;
 import my.trader.coin.util.AuthorizationGenerator;
 import my.trader.coin.util.CharacterUtility;
 import my.trader.coin.util.ExternalUtility;
+import my.trader.coin.util.TimeUtility;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -20,10 +26,14 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class UpbitService {
   private final AuthorizationGenerator authorizationGenerator;
   private final ExternalUtility externalUtility;
+  private final ClosedOrderService closedOrderService;
 
-  public UpbitService(AuthorizationGenerator authorizationGenerator, ExternalUtility externalUtility) {
+  public UpbitService(AuthorizationGenerator authorizationGenerator,
+                      ExternalUtility externalUtility,
+                      ClosedOrderService closedOrderService) {
     this.authorizationGenerator = authorizationGenerator;
     this.externalUtility = externalUtility;
+    this.closedOrderService = closedOrderService;
   }
 
   public List<AccountResponseDto> getAccount() {
@@ -64,7 +74,8 @@ public class UpbitService {
 
     String authorizationToken = authorizationGenerator.generateTokenWithParameter(orderRequestDto);
 
-    return externalUtility.postWithAuth(uri, orderRequestDto, OrderResponseDto.class, authorizationToken);
+    return externalUtility.postWithAuth(uri, orderRequestDto, OrderResponseDto.class,
+          authorizationToken);
   }
 
   public List<Double> getClosePrices(String market, int count) {
@@ -97,7 +108,8 @@ public class UpbitService {
 
     URI uri = UriComponentsBuilder.fromHttpUrl(url + "?" + parameters).build().toUri();
 
-    String authorizationToken = authorizationGenerator.generateTokenWithParameter(openOrderRequestDto);
+    String authorizationToken =
+          authorizationGenerator.generateTokenWithParameter(openOrderRequestDto);
 
     return externalUtility.getWithAuth(uri, OpenOrderResponseDto.class, authorizationToken);
   }
@@ -116,8 +128,46 @@ public class UpbitService {
           authorizationGenerator.generateTokenWithParameter(cancelOrderRequestDto);
 
     return externalUtility.deleteWithAuth(uri, cancelOrderRequestDto,
-                CancelOrderResponseDto.class,
-                authorizationToken);
+          CancelOrderResponseDto.class,
+          authorizationToken);
+  }
+
+  public List<CancelOrderResponseDto> beforeTaskExecution() {
+    List<CancelOrderResponseDto> results = new ArrayList<>();
+
+    // 계좌 조회
+    List<AccountResponseDto> accounts = this.getAccount();
+
+    // 종목별 미체결 주문 조회
+    for (AccountResponseDto accountResponseDto : accounts) {
+      // 현금 주문은 조회 제외
+      if (accountResponseDto.getCurrency().equals("KRW")) {
+        continue;
+      }
+
+      // 마켓코드 할당
+      String market = String.format("KRW-%s", accountResponseDto.getCurrency());
+
+      // 미체결 주문 조회
+      List<OpenOrderResponseDto> openOrders = this.getOpenOrders(market);
+
+      // 각 uuid 기준으로 주문 취소 요청
+      for (OpenOrderResponseDto openOrderResponseDto : openOrders) {
+        // 매수 주문은 해당 메서드에서 처리하지 않음 (#23)
+        if (openOrderResponseDto.getSide().equals("bid")) continue;
+
+        // uuid 조회
+        String uuid = openOrderResponseDto.getUuid();
+
+        // 미체결 주문 취소 요청
+        CancelOrderResponseDto result = this.cancelOrder(uuid);
+
+        // 결과값 추가
+        results.add(result);
+      }
+    }
+
+    return results;
   }
 
   public List<CancelOrderResponseDto> afterTaskCompletion() {
@@ -141,6 +191,9 @@ public class UpbitService {
 
       // 각 uuid 기준으로 주문 취소 요청
       for (OpenOrderResponseDto openOrderResponseDto : openOrders) {
+        // 매도 주문은 해당 메서드에서 처리하지 않음 (#23)
+        if (openOrderResponseDto.getSide().equals("ask")) continue;
+
         // uuid 조회
         String uuid = openOrderResponseDto.getUuid();
 
@@ -153,5 +206,53 @@ public class UpbitService {
     }
 
     return results;
+  }
+
+  public List<ClosedOrderResponseDto> initializeClosedOrders() {
+    DateTimeFormatter timestampFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
+    // 최초 거래 시점
+    // 최초 거래 시점 (UTC 기준으로 변환)
+    OffsetDateTime startTimeKst =
+          OffsetDateTime.of(2024, 6, 16, 22, 0, 0, 0, ZoneOffset.ofHours(9));
+    OffsetDateTime startTime = startTimeKst.withOffsetSameInstant(ZoneOffset.UTC);
+    OffsetDateTime endTime = startTime.plusHours(1).minusSeconds(1);
+
+    // 거래내역 테이블 초기화
+    closedOrderService.initClosedOrders();
+
+    List<ClosedOrderResponseDto> allClosedOrders = new ArrayList<>();
+    while (startTime.isBefore(OffsetDateTime.now(ZoneId.of("Asia/Seoul")))) {
+      ClosedOrderRequestDto closedOrderRequestDto = ClosedOrderRequestDto.builder()
+            .startTime(startTime.format(timestampFormatter))
+            .endTime(endTime.format(timestampFormatter))
+            .limit(1000)
+            .orderBy("asc")
+            .build();
+
+      String url = UpbitApi.GET_CLOSED_ORDER.getUrl();
+      String parameters = CharacterUtility.createQueryString(closedOrderRequestDto);
+
+      URI uri = UriComponentsBuilder.fromHttpUrl(url + "?" + parameters).build().toUri();
+
+      String authorizationToken = authorizationGenerator.generateTokenWithParameter(
+            closedOrderRequestDto);
+
+      List<ClosedOrderResponseDto> response =
+            externalUtility.getWithAuth(uri, ClosedOrderResponseDto.class, authorizationToken);
+
+      if (response != null) {
+        allClosedOrders.addAll(response);
+        closedOrderService.saveClosedOrder(allClosedOrders);
+      }
+
+      // Increment the time range by 1 hour
+      startTime = endTime.minusMinutes(1);
+      endTime = startTime.plusHours(1).minusSeconds(1);
+
+      TimeUtility.sleep(1);
+    }
+
+    return allClosedOrders;
   }
 }
