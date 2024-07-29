@@ -7,19 +7,20 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 import my.trader.coin.dto.exchange.*;
 import my.trader.coin.dto.quotation.CandleResponseDto;
 import my.trader.coin.dto.quotation.CandleRequestDto;
 import my.trader.coin.dto.quotation.TickerRequestDto;
 import my.trader.coin.dto.quotation.TickerResponseDto;
+import my.trader.coin.enums.Unit;
 import my.trader.coin.enums.UpbitApi;
 import my.trader.coin.enums.UpbitType;
-import my.trader.coin.util.AuthorizationGenerator;
-import my.trader.coin.util.CharacterUtility;
-import my.trader.coin.util.ExternalUtility;
-import my.trader.coin.util.TimeUtility;
+import my.trader.coin.util.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
@@ -78,24 +79,35 @@ public class UpbitService {
           authorizationToken);
   }
 
-  public List<Double> getClosePrices(String market, int count) {
+  public List<CandleResponseDto> getMinuteCandle(String market, Unit unit, int count,
+                                                 String orderBy) {
+    int minCandleSize = Integer.parseInt(UpbitType.MIN_CANDLE_SIZE.getType());
+    int maxCandleSize = Integer.parseInt(UpbitType.MAX_CANDLE_SIZE.getType());
+
+    if (count < minCandleSize || count > maxCandleSize) {
+      System.err.printf("count %d out of %d ~ %d%n", count, minCandleSize, maxCandleSize);
+    }
+
     CandleRequestDto candleRequestDto = CandleRequestDto.builder()
           .market(market)
           .count(count)
           .build();
 
-    String url = UpbitApi.GET_MINUTE_CANDLE.getUrl();
+    // unit 파라미터에 따라
+    String url = String.format(UpbitApi.GET_MINUTE_CANDLE.getUrl(), unit.getUnit());
     String parameters = CharacterUtility.createQueryString(candleRequestDto);
 
     URI uri = UriComponentsBuilder.fromHttpUrl(url + "?" + parameters).build().toUri();
 
     List<CandleResponseDto> candleResponseDtos =
           externalUtility.getWithoutAuth(uri, CandleResponseDto.class);
-    List<Double> closePrices = new ArrayList<>();
-    for (CandleResponseDto candleResponseDto : candleResponseDtos) {
-      closePrices.add(candleResponseDto.getTradePrice());
+
+    // orderBy 인자에 따라 정렬
+    if (orderBy.equalsIgnoreCase("asc")) {
+      candleResponseDtos.sort(Comparator.comparingLong(CandleResponseDto::getTimestamp));
     }
-    return closePrices;
+
+    return candleResponseDtos;
   }
 
   public List<OpenOrderResponseDto> getOpenOrders(String market) {
@@ -254,5 +266,54 @@ public class UpbitService {
     }
 
     return allClosedOrders;
+  }
+
+  /**
+   * 지수 이동 평균 데이터를 기준으로 RSI 지표 조회.
+   *
+   * @param market 마켓코드
+   * @param weight 가중치
+   * @return RSI
+   */
+  public Double calculateRelativeStrengthIndex(String market, int weight) {
+    int maxCandleSize = Integer.parseInt(UpbitType.MAX_CANDLE_SIZE.getType());
+
+    // timestamp 기준 오름차순 정렬된 지수 이동 평균 데이터 조회
+    List<CandleResponseDto> candles =
+          getMinuteCandle(market, Unit.UNIT_1, maxCandleSize, "asc");
+    // 마지막 데이터는 현재 분에 해당하는 캔들이므로 제거
+    candles.remove(candles.size() - 1);
+
+    // 상승 데이터
+    List<Double> up = new ArrayList<>();
+    // 하락 데이터
+    List<Double> down = new ArrayList<>();
+
+    for (int i = 0; i < candles.size() - 1; i++) {
+      // gap = 최근 종가 - 전일 종가
+      // gap 양수 = 상승 / gap 음수 = 하락
+      double gap = candles.get(i + 1).getTradePrice() - candles.get(i).getTradePrice();
+
+      if (gap > 0) {
+        // 종가가 전일 종가보다 상승일 경우
+        up.add(gap);
+        down.add(0.0);
+      } else if (gap < 0) {
+        // 종가가 전일 종가보다 하락일 경우
+        down.add(gap * -1);
+        up.add(0.0);
+      } else {
+        // 상승, 하락이 없을 경우
+        up.add(0.0);
+        down.add(0.0);
+      }
+    }
+
+    // AU 계산
+    double au = MathUtility.calculateExponentialMovingAverage(up, weight);
+    // AD 계산
+    double ad = MathUtility.calculateExponentialMovingAverage(down, weight);
+
+    return 100 - (100 / (1 + (au / ad)));
   }
 }

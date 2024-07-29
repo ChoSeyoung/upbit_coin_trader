@@ -34,20 +34,24 @@ public class ScalpingStrategy {
   public Signal shouldBuy(String market) {
     ColorfulConsoleOutput.printWithColor("매수 의사결정을 위한 가격 확인", ColorfulConsoleOutput.RED);
 
-    List<Double> closePrices = upbitService.getClosePrices(market, 15);
+    double rsi = upbitService.calculateRelativeStrengthIndex(market, 14);
 
-    double rsi = MathUtility.calculateRsi(closePrices, 14);
+    // RSI 로깅
+    ColorfulConsoleOutput.printWithColor(String.format("[%s] RSI: %s", market, rsi),
+          ColorfulConsoleOutput.RED);
 
-    return (rsi < 25) ? Signal.BUY : Signal.NO_ACTION;
+    return (rsi < 30) ? Signal.BUY : Signal.NO_ACTION;
   }
 
   /**
    * 매도 의사결정.
    *
    * @param market 마켓코드
+   * @param currentPrice 매도가
+   * @param inventory 보유량
    * @return 매도 결정시 true
    */
-  public Signal shouldSell(String market, Double currentPrice) {
+  public Signal shouldSell(String market, Double currentPrice, Double inventory) {
     ColorfulConsoleOutput.printWithColor("매도 의사결정을 위한 가격 확인", ColorfulConsoleOutput.BLUE);
 
     // TODO. RSI 기준으로 매도 작업을 진행하게 되는 경우 아래 코드를 참고하세요
@@ -57,6 +61,11 @@ public class ScalpingStrategy {
     String currency = market.split("-")[1];
     List<AccountResponseDto> accounts = upbitService.getAccount();
 
+    // 전체 예산 계산
+    double budget = accounts.stream()
+          .mapToDouble(AccountResponseDto::getBalance)
+          .sum();
+    // 목표 암호화폐 지정
     Optional<AccountResponseDto> target = accounts.stream()
           .filter(account -> account.getCurrency().equalsIgnoreCase(currency))
           .findFirst();
@@ -68,15 +77,18 @@ public class ScalpingStrategy {
       double targetProfit = Double.parseDouble(
             configService.getConfByName(CacheKey.TAKE_PROFIT_PERCENTAGE.getKey()).getVal()
       );
+      // 거래가 길어질것을 대비하여 매수한 금액이 전체예산의 10분의 1이 넘을 경우
+      // 목표 수익률을 반으로 줄여 안전하게 수익을 창출한다.
+      if (account.getAvgBuyPrice() >= (budget * 0.1)) {
+        targetProfit = targetProfit * 0.5;
+      }
       // 거래소 수수료
       double exchangeFeeRatio = Double.parseDouble(
             configService.getConfByName(CacheKey.EXCHANGE_FEE_RATIO.getKey()).getVal()
       );
 
-      // 보유 암호화폐 평균 매수가
-      Double avgBuyPrice = account.getAvgBuyPrice() * exchangeFeeRatio;
       // 현재 수익률 계산
-      double profitRate = ((currentPrice - avgBuyPrice) / avgBuyPrice) * 100;
+      double profitRate = ((currentPrice - account.getAvgBuyPrice()) / account.getAvgBuyPrice()) * 100;
 
       // 현재수익률/목표수익률 로깅
       ColorfulConsoleOutput.printWithColor(

@@ -72,4 +72,30 @@ public class MathUtility {
     double rs = averageGain / averageLoss;
     return 100 - (100 / (1 + rs));
   }
+
+  /**
+   * EMA(Exponential Moving Average) 계산
+   * 정식 공식 : 2 / 1 + weight
+   * 업비트 공식 : 1 / (1 + (weight - 1))
+   *
+   * @param data 상승/하락 갭 데이터
+   * @return EMA
+   */
+  public static double calculateExponentialMovingAverage(List<Double> data, int weight) {
+    //
+    // 업비트에서 사용하는 수식은
+    double formula = (double) 1 / (1 + (weight - 1));
+
+    double result = 0;
+    if (!data.isEmpty()) {
+      result = data.get(0);
+      if (data.size() > 1) {
+        for (int i = 1; i < data.size(); i++) {
+          result = (data.get(i) * formula) + (result * (1 - formula));
+        }
+      }
+    }
+
+    return result;
+  }
 }
