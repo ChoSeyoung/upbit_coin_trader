@@ -18,7 +18,14 @@ public enum UpbitType {
   ORDER_TYPE_BEST("best"),
   // 캔들 개수(1~200개까지 요청 가능)
   MIN_CANDLE_SIZE("1"),
-  MAX_CANDLE_SIZE("200");
+  MAX_CANDLE_SIZE("200"),
+  // EVEN : 보합
+  TICKER_CHANGE_EVEN("EVEN"),
+  // RISE : 상승
+  TICKER_CHANGE_RISE("RISE"),
+  // FALL : 하락
+  TICKER_CHANGE_FALL("FALL");
+
 
   private final String type;
 

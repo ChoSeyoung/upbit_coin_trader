@@ -41,4 +41,9 @@ public class ManualController {
   public List<ClosedOrderResponseDto> initClosedOrders() {
     return upbitService.initializeClosedOrders();
   }
+
+  @PostMapping("/init/scheduled/market")
+  public void initScheduledMarket() {
+    upbitService.selectScheduledMarket();
+  }
 }

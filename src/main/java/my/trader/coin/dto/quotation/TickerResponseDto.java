@@ -1,6 +1,7 @@
 package my.trader.coin.dto.quotation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
@@ -60,7 +61,7 @@ public class TickerResponseDto {
   private Double accTradePrice;
 
   @JsonProperty("acc_trade_price_24h")
-  private Double accTradePrice24h;
+  private BigDecimal accTradePrice24h;
 
   @JsonProperty("acc_trade_volume")
   private Double accTradeVolume;

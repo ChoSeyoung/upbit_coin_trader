@@ -37,15 +37,17 @@ public class WebClientConfig {
                       .addHandlerLast(new WriteTimeoutHandler(10)))
           .resolver(DefaultAddressResolverGroup.INSTANCE); // 기본 주소 해석기 사용
 
-    // 요청 필터 추가 (필요 시)
-    // 응답 필터 추가 (필요 시)
+    // WebClient 설정
     return WebClient.builder()
           .clientConnector(new ReactorClientHttpConnector(httpClient))
           .filter(ExchangeFilterFunction.ofRequestProcessor(Mono::just))
           .filter(ExchangeFilterFunction.ofResponseProcessor(Mono::just))
           .filter((request, next) -> // 에러 핸들링 로직
                 next.exchange(request)
-                .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(2)))
-                .onErrorResume(Mono::error));
+                      .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(2)))
+                      .onErrorResume(Mono::error))
+          .codecs(configurer -> configurer
+                .defaultCodecs()
+                .maxInMemorySize(16 * 1024 * 1024)); // 버퍼 크기를 16MB로 설정
   }
 }

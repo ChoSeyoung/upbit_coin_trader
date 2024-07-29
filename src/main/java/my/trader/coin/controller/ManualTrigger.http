@@ -20,3 +20,8 @@ Content-Type: application/json
 {}
 
 ###
+### 스케쥴링 종목 선정
+POST http://localhost:8080/init/scheduled/market
+Content-Type: application/json
+
+{}

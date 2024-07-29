@@ -58,10 +58,18 @@ public class UpbitScheduler {
   }
 
   /**
+   * 매시간마다 매수/매도 전략을 실행할 종목 선정합니다.
+   */
+  @Scheduled(cron = "0 0 * * * *") // 매 시간마다 실행
+  public void runTechnicalAnalysis() {
+    upbitService.selectScheduledMarket();
+  }
+
+  /**
    * 매 분마다 시장 데이터를 가져오고 스캘핑 전략을 실행합니다.
    */
-  @Scheduled(cron = "0 * * * * *") // 매 분 0초에 실행
-  public void fetchMarketData() {
+  @Scheduled(cron = "1 * * * * *") // 매 분 1초에 실행
+  public void runStrategy() {
     // 스케줄러 실행전 미체결된 매도 주문 취소 접수
     List<CancelOrderResponseDto> cancelSellOrders = upbitService.beforeTaskExecution();
     if (!cancelSellOrders.isEmpty()) {
@@ -172,7 +180,7 @@ public class UpbitScheduler {
       // 매도 신호가 발생하면 매도 로직 실행
       // 매도금액은 최소주문 금액보다 많아야 처리 가능(업비트 정책)
       TimeUtility.sleep(1);
-      if (currentPrice * quantity > minimumOrderAmount) {
+      if (currentPrice * quantity >= minimumOrderAmount) {
         OrderResponseDto result =
               upbitService.executeOrder(market, currentPrice, quantity,
                     UpbitType.ORDER_SIDE_ASK.getType());

@@ -1,5 +1,6 @@
 package my.trader.coin.service;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -11,13 +12,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import my.trader.coin.dto.exchange.*;
-import my.trader.coin.dto.quotation.CandleResponseDto;
-import my.trader.coin.dto.quotation.CandleRequestDto;
-import my.trader.coin.dto.quotation.TickerRequestDto;
-import my.trader.coin.dto.quotation.TickerResponseDto;
+import my.trader.coin.dto.quotation.*;
 import my.trader.coin.enums.Unit;
 import my.trader.coin.enums.UpbitApi;
 import my.trader.coin.enums.UpbitType;
+import my.trader.coin.model.Config;
 import my.trader.coin.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -28,13 +27,26 @@ public class UpbitService {
   private final AuthorizationGenerator authorizationGenerator;
   private final ExternalUtility externalUtility;
   private final ClosedOrderService closedOrderService;
+  private final ConfigService configService;
 
   public UpbitService(AuthorizationGenerator authorizationGenerator,
                       ExternalUtility externalUtility,
-                      ClosedOrderService closedOrderService) {
+                      ClosedOrderService closedOrderService, ConfigService configService) {
     this.authorizationGenerator = authorizationGenerator;
     this.externalUtility = externalUtility;
     this.closedOrderService = closedOrderService;
+    this.configService = configService;
+  }
+
+  public List<MarketResponseDto> getMarket() {
+    MarketRequestDto marketRequestDto = MarketRequestDto.builder().isDetail(true).build();
+
+    String url = UpbitApi.GET_MARKET.getUrl();
+    String parameters = CharacterUtility.createQueryString(marketRequestDto);
+
+    URI uri = UriComponentsBuilder.fromHttpUrl(url + "?" + parameters).build().toUri();
+
+    return externalUtility.getWithoutAuth(uri, MarketResponseDto.class);
   }
 
   public List<AccountResponseDto> getAccount() {
@@ -315,5 +327,36 @@ public class UpbitService {
     double ad = MathUtility.calculateExponentialMovingAverage(down, weight);
 
     return 100 - (100 / (1 + (au / ad)));
+  }
+
+  public void selectScheduledMarket() {
+    List<MarketResponseDto> marketResponses = getMarket();
+
+    List<String> markets = marketResponses.stream()
+          .map(MarketResponseDto::getMarket)
+          .toList();
+
+    List<TickerResponseDto> tickers = getTicker(markets);
+
+    // 현재 상승중인 종목 & 24시간 누적 거래액이 1000억 이상 & 변화율이 5% 이상 => 변화율 기준 내림차순 정렬
+    List<TickerResponseDto> analyzedTickers = tickers.stream()
+          .filter(ticker -> ticker.getChange().equals(UpbitType.TICKER_CHANGE_RISE.getType()))
+          .filter(ticker -> ticker.getAccTradePrice24h().compareTo(
+                BigDecimal.valueOf(10_000_000_000L)) > 0)
+          .filter(ticker -> ticker.getChangeRate() >= 0.05)
+          .sorted(Comparator.comparing(TickerResponseDto::getSignedChangeRate).reversed())
+          .toList();
+
+    // filtered 된 데이터에서 market 필드 값만 추출하여 콤마로 구분된 문자열 생성
+    String trailedMarket = analyzedTickers.stream()
+          .map(TickerResponseDto::getMarket)
+          .collect(Collectors.joining(","));
+
+    System.out.println(trailedMarket);
+    Config config = new Config();
+    config.setName("scheduled_market");
+    config.setVal(trailedMarket);
+
+    configService.updateConfig(config);
   }
 }

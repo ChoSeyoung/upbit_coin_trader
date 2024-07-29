@@ -4,6 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum UpbitApi {
+  GET_MARKET("https://api.upbit.com/v1/market/all"),
   GET_ACCOUNT("https://api.upbit.com/v1/accounts"),
   GET_TICKER("https://api.upbit.com/v1/ticker"),
   POST_ORDER("https://api.upbit.com/v1/orders"),
