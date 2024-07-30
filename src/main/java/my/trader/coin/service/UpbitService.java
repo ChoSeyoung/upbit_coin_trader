@@ -2,7 +2,6 @@ package my.trader.coin.service;
 
 import java.math.BigDecimal;
 import java.net.URI;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -19,7 +18,6 @@ import my.trader.coin.enums.UpbitType;
 import my.trader.coin.model.Config;
 import my.trader.coin.util.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
@@ -341,7 +339,7 @@ public class UpbitService {
           .filter(ticker -> ticker.getChange().equals(UpbitType.TICKER_CHANGE_RISE.getType()))
           .filter(ticker -> ticker.getAccTradePrice24h().compareTo(
                 BigDecimal.valueOf(10_000_000_000L)) > 0)
-          .filter(ticker -> ticker.getChangeRate() >= 0.02)
+          .filter(ticker -> ticker.getChangeRate() >= 0.05)
           .sorted(Comparator.comparing(TickerResponseDto::getSignedChangeRate).reversed())
           .toList();
 
@@ -350,10 +348,18 @@ public class UpbitService {
           .map(TickerResponseDto::getMarket)
           .collect(Collectors.joining(","));
 
-    System.out.println(trailedMarket);
+    List<AccountResponseDto> accounts = this.getAccount();
+
+    List<String> holdingMarkets = accounts.stream()
+          .filter(account -> !"KRW".equals(account.getCurrency()))
+          .map(account -> account.getUnitCurrency() + "-" + account.getCurrency())
+          .toList();
+
+    String trailedHoldingMarket = String.join(",", holdingMarkets);
+
     Config config = new Config();
     config.setName("scheduled_market");
-    config.setVal(trailedMarket);
+    config.setVal(trailedMarket + "," + trailedHoldingMarket);
 
     configService.updateConfig(config);
   }

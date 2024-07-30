@@ -22,6 +22,31 @@ import java.time.Duration;
 public class WebClientConfig {
 
   @Bean
+  public RateLimiter rateLimiter() {
+    RateLimiterConfig config = RateLimiterConfig.custom()
+          .limitForPeriod(10) // 초당 요청 개수
+          .limitRefreshPeriod(Duration.ofSeconds(1)) // 제한 주기
+          .timeoutDuration(Duration.ofSeconds(2)) // 대기 시간
+          .build();
+
+    return RateLimiter.of("ExternalApiRateLimiter", config);
+  }
+
+  private ExchangeFilterFunction rateLimiterFilter(RateLimiter rateLimiter) {
+    return ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
+      while (!rateLimiter.acquirePermission()) {
+        try {
+          Thread.sleep(1000);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          return Mono.error(new RuntimeException("Thread was interrupted", e));
+        }
+      }
+      return Mono.just(clientRequest);
+    });
+  }
+
+  @Bean
   public WebClient.Builder webClientBuilder() {
     // 커넥션 프로바이더 설정
     ConnectionProvider connectionProvider = ConnectionProvider.builder("custom")
@@ -39,32 +64,12 @@ public class WebClientConfig {
                       .addHandlerLast(new WriteTimeoutHandler(10)))
           .resolver(DefaultAddressResolverGroup.INSTANCE); // 기본 주소 해석기 사용
 
-    // Rate Limiter 설정
-    RateLimiterConfig rateLimiterConfig = RateLimiterConfig.custom()
-          .limitRefreshPeriod(Duration.ofSeconds(1))
-          .limitForPeriod(30)
-          .timeoutDuration(Duration.ofMillis(0))
-          .build();
-
-    RateLimiter rateLimiter = RateLimiter.of("custom", rateLimiterConfig);
-
     // WebClient 설정
     return WebClient.builder()
           .clientConnector(new ReactorClientHttpConnector(httpClient))
+          .filter(rateLimiterFilter(rateLimiter()))
           .filter(ExchangeFilterFunction.ofRequestProcessor(Mono::just))
           .filter(ExchangeFilterFunction.ofResponseProcessor(Mono::just))
-          .filter((request, next) -> {
-            return Mono.defer(() -> {
-              if (rateLimiter.acquirePermission()) {
-                return next.exchange(request);
-              } else {
-                return Mono.delay(Duration.ofSeconds(1))
-                      .then(next.exchange(request));
-              }
-            })
-            .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(2)))
-            .onErrorResume(Mono::error);
-          })
           .codecs(configurer -> configurer
                 .defaultCodecs()
                 .maxInMemorySize(16 * 1024 * 1024)); // 버퍼 크기를 16MB로 설정

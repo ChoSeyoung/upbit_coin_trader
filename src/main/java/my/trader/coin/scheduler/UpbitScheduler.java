@@ -19,6 +19,7 @@ import my.trader.coin.service.InventoryService;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.strategy.ScalpingStrategy;
 import my.trader.coin.util.MathUtility;
+import my.trader.coin.util.TimeUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -61,9 +62,9 @@ public class UpbitScheduler {
   }
 
   /**
-   * 매시간마다 매수/매도 전략을 실행할 종목 선정합니다.
+   * 종목 선정.
    */
-  @Scheduled(cron = "0 0 * * * *") // 매 시간마다 실행
+  @Scheduled(cron = "0 */10 * * * *") // 매 시간마다 실행
   public void runTechnicalAnalysis() {
     upbitService.selectScheduledMarket();
   }
@@ -87,8 +88,10 @@ public class UpbitScheduler {
   public void runStrategy() {
     // 매수 프로세스 실행
     runBuy();
+    TimeUtility.sleep(1);
     // 매도 프로세스 실행
     runSell();
+    TimeUtility.sleep(1);
     // 완료 로깅
     ColorfulConsoleOutput.printWithColor(++schedulerExecutedCount + " set cleared",
           ColorfulConsoleOutput.CYAN);
@@ -148,6 +151,7 @@ public class UpbitScheduler {
             );
           }
         }
+        TimeUtility.sleep(1);
       }
     }
   }
@@ -224,6 +228,7 @@ public class UpbitScheduler {
             }
           }
         }
+        TimeUtility.sleep(1);
       }
     }
   }
