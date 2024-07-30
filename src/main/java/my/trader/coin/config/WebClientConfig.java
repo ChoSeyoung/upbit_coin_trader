@@ -1,5 +1,7 @@
 package my.trader.coin.config;
 
+import io.github.resilience4j.ratelimiter.RateLimiter;
+import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
@@ -37,15 +39,32 @@ public class WebClientConfig {
                       .addHandlerLast(new WriteTimeoutHandler(10)))
           .resolver(DefaultAddressResolverGroup.INSTANCE); // 기본 주소 해석기 사용
 
+    // Rate Limiter 설정
+    RateLimiterConfig rateLimiterConfig = RateLimiterConfig.custom()
+          .limitRefreshPeriod(Duration.ofSeconds(1))
+          .limitForPeriod(30)
+          .timeoutDuration(Duration.ofMillis(0))
+          .build();
+
+    RateLimiter rateLimiter = RateLimiter.of("custom", rateLimiterConfig);
+
     // WebClient 설정
     return WebClient.builder()
           .clientConnector(new ReactorClientHttpConnector(httpClient))
           .filter(ExchangeFilterFunction.ofRequestProcessor(Mono::just))
           .filter(ExchangeFilterFunction.ofResponseProcessor(Mono::just))
-          .filter((request, next) -> // 에러 핸들링 로직
-                next.exchange(request)
-                      .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(2)))
-                      .onErrorResume(Mono::error))
+          .filter((request, next) -> {
+            return Mono.defer(() -> {
+              if (rateLimiter.acquirePermission()) {
+                return next.exchange(request);
+              } else {
+                return Mono.delay(Duration.ofSeconds(1))
+                      .then(next.exchange(request));
+              }
+            })
+            .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(2)))
+            .onErrorResume(Mono::error);
+          })
           .codecs(configurer -> configurer
                 .defaultCodecs()
                 .maxInMemorySize(16 * 1024 * 1024)); // 버퍼 크기를 16MB로 설정

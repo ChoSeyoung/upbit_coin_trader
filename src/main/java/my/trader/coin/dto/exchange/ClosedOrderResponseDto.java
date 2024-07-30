@@ -1,6 +1,7 @@
 package my.trader.coin.dto.exchange;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.LocalDateTime;
 import java.util.Date;
 import lombok.Data;
 
@@ -28,7 +29,7 @@ public class ClosedOrderResponseDto {
   private String market;
 
   @JsonProperty("created_at")
-  private Date createdAt;
+  private LocalDateTime createdAt;
 
   @JsonProperty("volume")
   private Double volume;

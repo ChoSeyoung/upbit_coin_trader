@@ -1,8 +1,13 @@
 package my.trader.coin.controller;
 
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import my.trader.coin.dto.exchange.ClosedOrderResponseDto;
+import my.trader.coin.service.ClosedOrderReportService;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.util.AuthorizationGenerator;
 import org.springframework.web.bind.annotation.*;
@@ -14,11 +19,14 @@ import org.springframework.web.bind.annotation.*;
 public class ManualController {
   private final UpbitService upbitService;
   private final AuthorizationGenerator authorizationGenerator;
+  private final ClosedOrderReportService closedOrderReportService;
 
   public ManualController(UpbitService upbitService,
-                          AuthorizationGenerator authorizationGenerator) {
+                          AuthorizationGenerator authorizationGenerator,
+                          ClosedOrderReportService closedOrderReportService) {
     this.upbitService = upbitService;
     this.authorizationGenerator = authorizationGenerator;
+    this.closedOrderReportService = closedOrderReportService;
   }
 
   /**
@@ -38,12 +46,30 @@ public class ManualController {
   }
 
   @PostMapping("/init/orders/closed")
-  public List<ClosedOrderResponseDto> initClosedOrders() {
+  public List<ClosedOrderResponseDto> initClosedOrders(
+        @RequestParam(value = "year") int year,
+        @RequestParam(value = "month") int month,
+        @RequestParam(value = "day") int day,
+        @RequestParam(value = "hour") int hour
+
+  ) {
+
+    OffsetDateTime startTime = null;
+
+    OffsetDateTime startTimeKst = OffsetDateTime.of(year, month, day,
+          hour, 0, 0, 0, ZoneOffset.ofHours(9));
+    startTime = startTimeKst.withOffsetSameInstant(ZoneOffset.UTC);
+
     return upbitService.initializeClosedOrders();
   }
 
   @PostMapping("/init/scheduled/market")
   public void initScheduledMarket() {
     upbitService.selectScheduledMarket();
+  }
+
+  @PostMapping("/init/scheduled/report")
+  public void initScheduledReport() {
+    closedOrderReportService.generateHourlyReport();
   }
 }

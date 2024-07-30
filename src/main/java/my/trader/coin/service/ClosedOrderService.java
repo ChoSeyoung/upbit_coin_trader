@@ -1,10 +1,12 @@
 package my.trader.coin.service;
 
 import jakarta.transaction.Transactional;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import my.trader.coin.dto.exchange.ClosedOrderResponseDto;
 import my.trader.coin.model.ClosedOrder;
+import my.trader.coin.repository.ClosedOrderReportRepository;
 import my.trader.coin.repository.ClosedOrderRepository;
 import org.springframework.stereotype.Service;
 

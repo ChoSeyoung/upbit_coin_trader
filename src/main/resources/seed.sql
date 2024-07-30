@@ -21,6 +21,15 @@ CREATE TABLE closed_orders
     time_in_force    VARCHAR(20) NOT NULL
 );
 
+CREATE TABLE closed_orders_report
+(
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    market      VARCHAR(20) NOT NULL,
+    report_date DATE        NOT NULL,
+    report_hour INT         NOT NULL,
+    profit      DOUBLE      NOT NULL
+);
+
 create table configs
 (
     name varchar(255) not null

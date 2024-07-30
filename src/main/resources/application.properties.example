@@ -15,3 +15,12 @@ spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
 
 spring.jackson.property-naming-strategy=SNAKE_CASE
+
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.maximum-pool-size=20
+spring.datasource.hikari.idle-timeout=30000
+spring.datasource.hikari.connection-timeout=30000
+spring.datasource.hikari.max-lifetime=1800000
+
+logging.level.com.zaxxer.hikari=DEBUG
+logging.level.org.springframework=DEBUG

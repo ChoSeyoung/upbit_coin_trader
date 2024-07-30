@@ -242,7 +242,6 @@ public class UpbitService {
     OffsetDateTime startTime = startTimeKst.withOffsetSameInstant(ZoneOffset.UTC);
     OffsetDateTime endTime = startTime.plusHours(1).minusSeconds(1);
 
-    // 거래내역 테이블 초기화
     closedOrderService.initClosedOrders();
 
     List<ClosedOrderResponseDto> allClosedOrders = new ArrayList<>();
@@ -274,7 +273,6 @@ public class UpbitService {
       startTime = endTime.minusMinutes(1);
       endTime = startTime.plusHours(1).minusSeconds(1);
 
-      TimeUtility.sleep(1);
     }
 
     return allClosedOrders;
@@ -343,7 +341,7 @@ public class UpbitService {
           .filter(ticker -> ticker.getChange().equals(UpbitType.TICKER_CHANGE_RISE.getType()))
           .filter(ticker -> ticker.getAccTradePrice24h().compareTo(
                 BigDecimal.valueOf(10_000_000_000L)) > 0)
-          .filter(ticker -> ticker.getChangeRate() >= 0.05)
+          .filter(ticker -> ticker.getChangeRate() >= 0.02)
           .sorted(Comparator.comparing(TickerResponseDto::getSignedChangeRate).reversed())
           .toList();
 

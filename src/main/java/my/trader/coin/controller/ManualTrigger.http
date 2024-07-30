@@ -4,6 +4,14 @@ POST http://localhost:8080/init/jwt
 Content-Type: application/json
 
 {
+}
+
+###
+### JWT 발급
+POST http://localhost:8080/init/jwt
+Content-Type: application/json
+
+{
   "end_time":"2024-06-16T22:59:59+09:00",
   "limit":"1000",
   "order_by":"desc",
@@ -14,7 +22,7 @@ Content-Type: application/json
 
 ###
 ### 마감 데이터 생성
-POST http://localhost:8080/init/orders/closed
+POST http://localhost:8080/init/orders/closed?year=2024&month=7&day=30&hour=00
 Content-Type: application/json
 
 {}
@@ -22,6 +30,13 @@ Content-Type: application/json
 ###
 ### 스케쥴링 종목 선정
 POST http://localhost:8080/init/scheduled/market
+Content-Type: application/json
+
+{}
+
+###
+### 리포트 생성
+POST http://localhost:8080/init/scheduled/report
 Content-Type: application/json
 
 {}

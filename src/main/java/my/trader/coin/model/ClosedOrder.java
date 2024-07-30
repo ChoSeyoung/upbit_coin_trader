@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import java.util.Date;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,7 +21,7 @@ public class ClosedOrder {
   private Double price;
   private String state;
   private String market;
-  private Date createdAt;
+  private LocalDateTime createdAt;
   private Double volume;
   private Double remainingVolume;
   private Double reservedFee;
