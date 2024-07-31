@@ -24,3 +24,5 @@ spring.datasource.hikari.max-lifetime=1800000
 
 logging.level.com.zaxxer.hikari=DEBUG
 logging.level.org.springframework=DEBUG
+
+server.tomcat.max-threads=200

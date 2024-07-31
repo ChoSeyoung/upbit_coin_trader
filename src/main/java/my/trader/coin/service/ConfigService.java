@@ -34,6 +34,7 @@ public class ConfigService {
 
   @CachePut(value = "configs", key = "#config.name")
   public Config updateConfigCache(Config config) {
+    // 캐시를 업데이트합니다.
     return config;
   }
 

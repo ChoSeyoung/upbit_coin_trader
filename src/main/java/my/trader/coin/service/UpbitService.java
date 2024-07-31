@@ -339,19 +339,21 @@ public class UpbitService {
           .filter(ticker -> ticker.getChange().equals(UpbitType.TICKER_CHANGE_RISE.getType()))
           .filter(ticker -> ticker.getAccTradePrice24h().compareTo(
                 BigDecimal.valueOf(10_000_000_000L)) > 0)
-          .filter(ticker -> ticker.getChangeRate() >= 0.05)
+          .filter(ticker -> ticker.getChangeRate() >= 0.025)
           .sorted(Comparator.comparing(TickerResponseDto::getSignedChangeRate).reversed())
           .toList();
 
     // filtered 된 데이터에서 market 필드 값만 추출하여 콤마로 구분된 문자열 생성
     String trailedMarket = analyzedTickers.stream()
           .map(TickerResponseDto::getMarket)
+          .filter(market -> market.startsWith("KRW"))
           .collect(Collectors.joining(","));
 
     List<AccountResponseDto> accounts = this.getAccount();
 
     List<String> holdingMarkets = accounts.stream()
           .filter(account -> !"KRW".equals(account.getCurrency()))
+
           .map(account -> account.getUnitCurrency() + "-" + account.getCurrency())
           .toList();
 

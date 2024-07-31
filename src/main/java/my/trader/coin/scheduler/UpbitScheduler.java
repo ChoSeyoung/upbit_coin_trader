@@ -64,7 +64,7 @@ public class UpbitScheduler {
   /**
    * 종목 선정.
    */
-  @Scheduled(cron = "0 */10 * * * *") // 매 시간마다 실행
+  @Scheduled(cron = "0 */5 * * * *") // 매 시간마다 실행
   public void runTechnicalAnalysis() {
     upbitService.selectScheduledMarket();
   }
@@ -154,6 +154,7 @@ public class UpbitScheduler {
         TimeUtility.sleep(1);
       }
     }
+    upbitService.selectScheduledMarket();
   }
 
   private void runSell() {
@@ -231,5 +232,6 @@ public class UpbitScheduler {
         TimeUtility.sleep(1);
       }
     }
+    upbitService.selectScheduledMarket();
   }
 }

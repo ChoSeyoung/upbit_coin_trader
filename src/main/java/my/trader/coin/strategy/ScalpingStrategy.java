@@ -63,11 +63,6 @@ public class ScalpingStrategy {
     String currency = market.split("-")[1];
     List<AccountResponseDto> accounts = upbitService.getAccount();
 
-    // 전체 예산 계산
-    double budget = accounts.stream()
-          .mapToDouble(AccountResponseDto::getBalance)
-          .sum();
-
     // 목표 암호화폐 지정
     Optional<AccountResponseDto> target = accounts.stream()
           .filter(account -> account.getCurrency().equalsIgnoreCase(currency))
@@ -80,7 +75,7 @@ public class ScalpingStrategy {
 
       // 현재 보유 금액이 최소주문금액 이하 종목은 추가 진행하지 않음.
       double buyAmount = account.getAvgBuyPrice() * account.getBalance();
-      if (buyAmount <= minimumOrderAmount) {
+      if (buyAmount <= 5000) {
         // 현재수익률/목표수익률 로깅
         ColorfulConsoleOutput.printWithColor("최소 주문 금액 이하 종목 추가 진행 불가", ColorfulConsoleOutput.BLUE);
         return Signal.NO_ACTION;
