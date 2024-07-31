@@ -62,30 +62,29 @@ public class UpbitScheduler {
   }
 
   /**
-   * 종목 선정.
-   */
-  @Scheduled(cron = "0 */5 * * * *") // 매 시간마다 실행
-  public void runTechnicalAnalysis() {
-    upbitService.selectScheduledMarket();
-  }
-
-  /**
    * 매일 수익률 계산 리포트를 생성합니다.
    */
-  @Scheduled(cron = "0 0 0 * * *") // 매 시간마다 실행
-  public void runProfitAnalysis() {
-    // 거래 마감 데이터 생성
-    upbitService.initializeClosedOrders();
-
-    // 거래 마감 보고서 생성
-    closedOrderReportService.generateHourlyReport();
-  }
+//  @Scheduled(cron = "0 0 0 * * *") // 매 시간마다 실행
+//  public void runProfitAnalysis() {
+//    // 거래 마감 데이터 생성
+//    upbitService.initializeClosedOrders();
+//
+//    // 거래 마감 보고서 생성
+//    closedOrderReportService.generateHourlyReport();
+//  }
 
   /**
    * 매 분마다 시장 데이터를 가져오고 스캘핑 전략을 실행합니다.
    */
   @Scheduled(cron = "0 * * * * *")
   public void runStrategy() {
+    // 스케줄러 실행전 미체결된 매도 주문 취소 접수
+    List<CancelOrderResponseDto> cancelSellOrders = upbitService.beforeTaskExecution();
+    if (!cancelSellOrders.isEmpty()) {
+      ColorfulConsoleOutput.printWithColor("매수/매도 주문 잔여 수량 취소 작업 진행 완료",
+            ColorfulConsoleOutput.GREEN);
+    }
+    TimeUtility.sleep(1);
     // 매수 프로세스 실행
     runBuy();
     TimeUtility.sleep(1);
@@ -95,16 +94,6 @@ public class UpbitScheduler {
     // 완료 로깅
     ColorfulConsoleOutput.printWithColor(++schedulerExecutedCount + " set cleared",
           ColorfulConsoleOutput.CYAN);
-  }
-
-  @Scheduled(cron = "0 */10 * * * *")
-  public void runCancelOrder() {
-    // 스케줄러 실행전 미체결된 매도 주문 취소 접수
-    List<CancelOrderResponseDto> cancelSellOrders = upbitService.beforeTaskExecution();
-    if (!cancelSellOrders.isEmpty()) {
-      ColorfulConsoleOutput.printWithColor("매도 주문 잔여 수량 취소 작업 진행 완료",
-            ColorfulConsoleOutput.GREEN);
-    }
   }
 
   private void runBuy() {

@@ -6,9 +6,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import my.trader.coin.dto.exchange.*;
 import my.trader.coin.dto.quotation.*;
@@ -175,9 +173,6 @@ public class UpbitService {
 
       // 각 uuid 기준으로 주문 취소 요청
       for (OpenOrderResponseDto openOrderResponseDto : openOrders) {
-        // 매수 주문은 해당 메서드에서 처리하지 않음 (#23)
-        if (openOrderResponseDto.getSide().equals("bid")) continue;
-
         // uuid 조회
         String uuid = openOrderResponseDto.getUuid();
 
@@ -344,24 +339,32 @@ public class UpbitService {
           .toList();
 
     // filtered 된 데이터에서 market 필드 값만 추출하여 콤마로 구분된 문자열 생성
-    String trailedMarket = analyzedTickers.stream()
+    List<String> popularMarkets = analyzedTickers.stream()
           .map(TickerResponseDto::getMarket)
           .filter(market -> market.startsWith("KRW"))
-          .collect(Collectors.joining(","));
+          .toList();
 
+    // 보유 종목 조회
     List<AccountResponseDto> accounts = this.getAccount();
-
     List<String> holdingMarkets = accounts.stream()
           .filter(account -> !"KRW".equals(account.getCurrency()))
-
           .map(account -> account.getUnitCurrency() + "-" + account.getCurrency())
           .toList();
 
-    String trailedHoldingMarket = String.join(",", holdingMarkets);
+    List<String> defaultMarkets = List.of("KRW-BTC", "KRW-ETH", "KRW-XRP");
+
+    // 중복 제거 및 리스트 통합
+    Set<String> set = new HashSet<>();
+    set.addAll(popularMarkets);
+    set.addAll(holdingMarkets);
+    set.addAll(defaultMarkets);
+
+    // Set을 콤마로 구분된 문자열로 변환
+    String scheduledMarket = String.join(",", set);
 
     Config config = new Config();
     config.setName("scheduled_market");
-    config.setVal(trailedMarket + "," + trailedHoldingMarket);
+    config.setVal(scheduledMarket);
 
     configService.updateConfig(config);
   }
