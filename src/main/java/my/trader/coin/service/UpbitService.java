@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import my.trader.coin.dto.exchange.*;
 import my.trader.coin.dto.quotation.*;
+import my.trader.coin.enums.ColorfulConsoleOutput;
 import my.trader.coin.enums.Unit;
 import my.trader.coin.enums.UpbitApi;
 import my.trader.coin.enums.UpbitType;
@@ -367,5 +368,8 @@ public class UpbitService {
     config.setVal(scheduledMarket);
 
     configService.updateConfig(config);
+
+    ColorfulConsoleOutput.printWithColor("종목 업데이트 완료: " + scheduledMarket,
+          ColorfulConsoleOutput.GREEN);
   }
 }
