@@ -41,7 +41,7 @@ public class ScalpingStrategy {
     ColorfulConsoleOutput.printWithColor(String.format("RSI: %s", rsi),
           ColorfulConsoleOutput.RED);
 
-    return (rsi < 35) ? Signal.BUY : Signal.NO_ACTION;
+    return (rsi <= 30) ? Signal.BUY : Signal.NO_ACTION;
   }
 
   /**
