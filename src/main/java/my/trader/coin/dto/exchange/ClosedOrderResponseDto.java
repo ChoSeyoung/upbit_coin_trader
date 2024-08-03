@@ -1,7 +1,9 @@
 package my.trader.coin.dto.exchange;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Date;
 import lombok.Data;
 
@@ -20,7 +22,7 @@ public class ClosedOrderResponseDto {
   private String ordType;
 
   @JsonProperty("price")
-  private Double price;
+  private BigDecimal price;
 
   @JsonProperty("state")
   private String state;
@@ -29,7 +31,7 @@ public class ClosedOrderResponseDto {
   private String market;
 
   @JsonProperty("created_at")
-  private LocalDateTime createdAt;
+  private OffsetDateTime createdAt;
 
   @JsonProperty("volume")
   private Double volume;
@@ -38,22 +40,22 @@ public class ClosedOrderResponseDto {
   private Double remainingVolume;
 
   @JsonProperty("reserved_fee")
-  private Double reservedFee;
+  private BigDecimal reservedFee;
 
   @JsonProperty("remaining_fee")
-  private Double remainingFee;
+  private BigDecimal remainingFee;
 
   @JsonProperty("paid_fee")
-  private Double paidFee;
+  private BigDecimal paidFee;
 
   @JsonProperty("locked")
   private Double locked;
 
   @JsonProperty("executed_volume")
-  private Double executedVolume;
+  private BigDecimal executedVolume;
 
   @JsonProperty("executed_funds")
-  private Double executedFunds;
+  private BigDecimal executedFunds;
 
   @JsonProperty("trades_count")
   private Integer tradesCount;

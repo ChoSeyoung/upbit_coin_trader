@@ -20,10 +20,7 @@ public class ClosedOrderRequestDto {
   private String market;
 
   @NotEmpty(message = "State cannot be empty")
-  private String states;
-
-//  @NotEmpty(message = "States cannot be empty")
-//  private List<String> states;
+  private String state;
 
   @NotEmpty(message = "startTime cannot be empty")
   private String startTime;
@@ -31,9 +28,7 @@ public class ClosedOrderRequestDto {
   @NotEmpty(message = "endTime cannot be empty")
   private String endTime;
 
-  @Min(value = 1, message = "Limit must be at least 1")
-  @Max(value = 1000, message = "Limit must be at most 100")
-  private Integer limit;
+  private String limit;
 
   @NotEmpty(message = "Order by cannot be empty")
   private String orderBy;

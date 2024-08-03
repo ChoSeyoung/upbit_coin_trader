@@ -1,5 +1,10 @@
 package my.trader.coin.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.Date;
 import my.trader.coin.model.ClosedOrder;
 import my.trader.coin.model.ClosedOrderReport;
 import my.trader.coin.repository.ClosedOrderReportRepository;
@@ -23,10 +28,25 @@ public class ClosedOrderReportService {
   }
 
   @Transactional
-  public void generateHourlyReport() {
-    LocalDateTime now = LocalDateTime.now();
-    LocalDateTime start = now.minusHours(1).withMinute(0).withSecond(0).withNano(0);
-    LocalDateTime end = start.withMinute(59).withSecond(59).withNano(999999999);
+  public void generateHourlyReport(boolean isScheduler) {
+    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.ofHours(9));
+
+    OffsetDateTime start;
+    OffsetDateTime end = now.withMinute(59).withSecond(59).withNano(999999999);
+
+    if (isScheduler) {
+      ClosedOrderReport lastReport =
+            closedOrderReportRepository.findTopByOrderByReportDateDescReportHourDesc();
+      if (lastReport != null) {
+        // 이 시간은 본래 시간에 9시간을 추가한 것이 아니라, 설정한 시간이 이미 UTC+9 시간대를 기준으로 한다는 것입니다.
+        start = OffsetDateTime.of(lastReport.getReportDate().atTime(lastReport.getReportHour(), 0),
+              ZoneOffset.ofHours(9)).plusHours(1);
+      } else {
+        start = closedOrderRepository.findEarliestCreatedAt();
+      }
+    } else {
+      start = closedOrderRepository.findEarliestCreatedAt();
+    }
 
     List<String> markets = closedOrderRepository.findDistinctMarkets();
 
@@ -43,28 +63,40 @@ public class ClosedOrderReportService {
     }
   }
 
-  public double calculateProfit(String market, LocalDateTime start, LocalDateTime end) {
+  private OffsetDateTime findEarliestCreatedAt() {
+    return closedOrderRepository.findEarliestCreatedAt();
+  }
+
+  public double calculateProfit(String market, OffsetDateTime start, OffsetDateTime end) {
     List<ClosedOrder> orders =
           closedOrderRepository.findByMarketAndCreatedAtBetween(market, start, end);
 
-    double totalExecutedFunds = orders.stream().mapToDouble(ClosedOrder::getExecutedFunds).sum();
-    double totalVolume = orders.stream().mapToDouble(ClosedOrder::getExecutedVolume).sum();
+    BigDecimal totalExecutedFunds = orders.stream()
+          .map(ClosedOrder::getExecutedFunds)
+          .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalVolume = orders.stream()
+          .map(ClosedOrder::getExecutedVolume)
+          .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    if (totalVolume == 0) return 0;
-    double averagePrice = totalExecutedFunds / totalVolume;
+    if (totalVolume.compareTo(BigDecimal.ZERO) == 0) return 0;
+    BigDecimal averagePrice = totalExecutedFunds.divide(totalVolume, RoundingMode.HALF_UP);
 
-    double closingPrice = orders.stream()
+    BigDecimal closingPrice = orders.stream()
           .filter(order -> !order.getCreatedAt().isAfter(end))
-          .mapToDouble(ClosedOrder::getPrice)
+          .map(ClosedOrder::getPrice)
           .findFirst()
           .orElse(averagePrice);
 
-    double openingPrice = orders.stream()
+    BigDecimal openingPrice = orders.stream()
           .filter(order -> !order.getCreatedAt().isBefore(start))
-          .mapToDouble(ClosedOrder::getPrice)
+          .map(ClosedOrder::getPrice)
           .findFirst()
           .orElse(averagePrice);
 
-    return (closingPrice - openingPrice) / openingPrice * 100;
+    BigDecimal profitPercentage = closingPrice.subtract(openingPrice)
+          .divide(openingPrice, RoundingMode.HALF_UP)
+          .multiply(new BigDecimal("100"));
+
+    return profitPercentage.doubleValue();
   }
 }

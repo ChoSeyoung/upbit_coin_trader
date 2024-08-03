@@ -52,7 +52,7 @@ public class AuthorizationGenerator {
     String jwtToken = null;
 
     try {
-      String queryString = CharacterUtility.createQueryString(dto);
+      String queryString = CharacterUtility.createQueryString(dto, false);
 
       MessageDigest md = MessageDigest.getInstance("SHA-512");
       md.update(queryString.getBytes(StandardCharsets.UTF_8));

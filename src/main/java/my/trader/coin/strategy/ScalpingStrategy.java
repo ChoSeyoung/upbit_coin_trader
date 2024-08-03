@@ -41,7 +41,7 @@ public class ScalpingStrategy {
     ColorfulConsoleOutput.printWithColor(String.format("RSI: %s", rsi),
           ColorfulConsoleOutput.RED);
 
-    return (rsi <= 30) ? Signal.BUY : Signal.NO_ACTION;
+    return (rsi <= 35) ? Signal.BUY : Signal.NO_ACTION;
   }
 
   /**
@@ -100,7 +100,14 @@ public class ScalpingStrategy {
             String.format("현재수익률/목표수익률 : %.1f/%.1f", profitRate, targetProfit),
             ColorfulConsoleOutput.BLUE);
 
-      // RSI 70선 이상이면서 익절목표 금액에 도달한경우 매도 신호 발생
+      double rsi = upbitService.calculateRelativeStrengthIndex(market, 14);
+
+      // 손절목표 금액에 도달한경우 손절 신호 발생
+      if (rsi >= 70 && profitRate < -2.0) {
+        return Signal.STOP_LOSS;
+      }
+
+      // 익절목표 금액에 도달한경우 매도 신호 발생
       return (profitRate > targetProfit) ? Signal.TAKE_PROFIT : Signal.NO_ACTION;
     } else {
       ColorfulConsoleOutput.printWithColor("미보유 종목 매도 불가", ColorfulConsoleOutput.BLUE);

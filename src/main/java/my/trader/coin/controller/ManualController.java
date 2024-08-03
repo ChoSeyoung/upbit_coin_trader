@@ -46,21 +46,8 @@ public class ManualController {
   }
 
   @PostMapping("/init/orders/closed")
-  public List<ClosedOrderResponseDto> initClosedOrders(
-        @RequestParam(value = "year") int year,
-        @RequestParam(value = "month") int month,
-        @RequestParam(value = "day") int day,
-        @RequestParam(value = "hour") int hour
-
-  ) {
-
-    OffsetDateTime startTime = null;
-
-    OffsetDateTime startTimeKst = OffsetDateTime.of(year, month, day,
-          hour, 0, 0, 0, ZoneOffset.ofHours(9));
-    startTime = startTimeKst.withOffsetSameInstant(ZoneOffset.UTC);
-
-    return upbitService.initializeClosedOrders();
+  public List<ClosedOrderResponseDto> initClosedOrders(@RequestBody(required = false) String type) {
+    return upbitService.initializeClosedOrders(type);
   }
 
   @PostMapping("/init/scheduled/market")
@@ -70,6 +57,6 @@ public class ManualController {
 
   @PostMapping("/init/scheduled/report")
   public void initScheduledReport() {
-    closedOrderReportService.generateHourlyReport();
+    closedOrderReportService.generateHourlyReport(false);
   }
 }

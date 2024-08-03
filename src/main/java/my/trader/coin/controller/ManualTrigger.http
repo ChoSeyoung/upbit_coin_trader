@@ -22,10 +22,12 @@ Content-Type: application/json
 
 ###
 ### 마감 데이터 생성
-POST http://localhost:8080/init/orders/closed?year=2024&month=7&day=30&hour=00
+POST http://localhost:8080/init/orders/closed
 Content-Type: application/json
 
-{}
+{
+  "type" : "scheduler"
+}
 
 ###
 ### 스케쥴링 종목 선정
@@ -39,4 +41,6 @@ Content-Type: application/json
 POST http://localhost:8080/init/scheduled/report
 Content-Type: application/json
 
-{}
+{
+
+}

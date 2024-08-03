@@ -2,6 +2,8 @@ package my.trader.coin.service;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -15,6 +17,7 @@ import my.trader.coin.enums.Unit;
 import my.trader.coin.enums.UpbitApi;
 import my.trader.coin.enums.UpbitType;
 import my.trader.coin.model.Config;
+import my.trader.coin.repository.ClosedOrderRepository;
 import my.trader.coin.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -25,21 +28,24 @@ public class UpbitService {
   private final ExternalUtility externalUtility;
   private final ClosedOrderService closedOrderService;
   private final ConfigService configService;
+  private final ClosedOrderRepository closedOrderRepository;
 
   public UpbitService(AuthorizationGenerator authorizationGenerator,
                       ExternalUtility externalUtility,
-                      ClosedOrderService closedOrderService, ConfigService configService) {
+                      ClosedOrderService closedOrderService, ConfigService configService,
+                      ClosedOrderRepository closedOrderRepository) {
     this.authorizationGenerator = authorizationGenerator;
     this.externalUtility = externalUtility;
     this.closedOrderService = closedOrderService;
     this.configService = configService;
+    this.closedOrderRepository = closedOrderRepository;
   }
 
   public List<MarketResponseDto> getMarket() {
     MarketRequestDto marketRequestDto = MarketRequestDto.builder().isDetail(true).build();
 
     String url = UpbitApi.GET_MARKET.getUrl();
-    String parameters = CharacterUtility.createQueryString(marketRequestDto);
+    String parameters = CharacterUtility.createQueryString(marketRequestDto, false);
 
     URI uri = UriComponentsBuilder.fromHttpUrl(url + "?" + parameters).build().toUri();
 
@@ -60,7 +66,7 @@ public class UpbitService {
           .build();
 
     String url = UpbitApi.GET_TICKER.getUrl();
-    String parameters = CharacterUtility.createQueryString(tickerRequestDto);
+    String parameters = CharacterUtility.createQueryString(tickerRequestDto, false);
 
     URI uri = UriComponentsBuilder.fromHttpUrl(url + "?" + parameters).build().toUri();
 
@@ -78,7 +84,7 @@ public class UpbitService {
           .build();
 
     String url = UpbitApi.POST_ORDER.getUrl();
-    String parameters = CharacterUtility.createQueryString(orderRequestDto);
+    String parameters = CharacterUtility.createQueryString(orderRequestDto, false);
 
     URI uri = UriComponentsBuilder.fromHttpUrl(url + "?" + parameters).build().toUri();
 
@@ -104,7 +110,7 @@ public class UpbitService {
 
     // unit 파라미터에 따라
     String url = String.format(UpbitApi.GET_MINUTE_CANDLE.getUrl(), unit.getUnit());
-    String parameters = CharacterUtility.createQueryString(candleRequestDto);
+    String parameters = CharacterUtility.createQueryString(candleRequestDto, false);
 
     URI uri = UriComponentsBuilder.fromHttpUrl(url + "?" + parameters).build().toUri();
 
@@ -125,7 +131,7 @@ public class UpbitService {
 
     String url = UpbitApi.GET_OPEN_ORDER.getUrl();
 
-    String parameters = CharacterUtility.createQueryString(openOrderRequestDto);
+    String parameters = CharacterUtility.createQueryString(openOrderRequestDto, false);
 
     URI uri = UriComponentsBuilder.fromHttpUrl(url + "?" + parameters).build().toUri();
 
@@ -141,7 +147,7 @@ public class UpbitService {
           .build();
 
     String url = UpbitApi.DELETE_CANCEL_ORDER.getUrl();
-    String parameters = CharacterUtility.createQueryString(cancelOrderRequestDto);
+    String parameters = CharacterUtility.createQueryString(cancelOrderRequestDto, false);
 
     URI uri = UriComponentsBuilder.fromHttpUrl(url + "?" + parameters).build().toUri();
 
@@ -226,47 +232,55 @@ public class UpbitService {
     return results;
   }
 
-  public List<ClosedOrderResponseDto> initializeClosedOrders() {
+  public List<ClosedOrderResponseDto> initializeClosedOrders(String type) {
+    OffsetDateTime startTime;
+
+    if ("scheduler".equals(type)) {
+      // 스케줄러를 통한 경우, closed_order 테이블에서 created_at 이 가장 마지막 데이터를 기준으로 1초 추가 되어야한다.
+      OffsetDateTime lastCreatedAt = closedOrderRepository.findLastCreatedAt();
+      if (lastCreatedAt == null) {
+        // DB에 데이터가 없는 경우 현재 날짜로 세팅
+        startTime = OffsetDateTime.now(ZoneOffset.ofHours(9));
+      } else {
+        startTime = lastCreatedAt.plusSeconds(1);
+      }
+    } else {
+      // 초기화 요청인 경우 2024-6-16 22:00:00 기준으로 시작되어 현재시간까지 반복되어야한다.
+      startTime = OffsetDateTime.of(2024, 6, 16, 22, 0, 0, 0, ZoneOffset.ofHours(9));
+      // closed_orders 테이블 초기화
+      closedOrderService.initClosedOrders();
+    }
+
+    // formatter 설정
     DateTimeFormatter timestampFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-
-    // 최초 거래 시점
-    // 최초 거래 시점 (UTC 기준으로 변환)
-    OffsetDateTime startTimeKst =
-          OffsetDateTime.of(2024, 6, 16, 22, 0, 0, 0, ZoneOffset.ofHours(9));
-    OffsetDateTime startTime = startTimeKst.withOffsetSameInstant(ZoneOffset.UTC);
-    OffsetDateTime endTime = startTime.plusHours(1).minusSeconds(1);
-
-    closedOrderService.initClosedOrders();
 
     List<ClosedOrderResponseDto> allClosedOrders = new ArrayList<>();
     while (startTime.isBefore(OffsetDateTime.now(ZoneId.of("Asia/Seoul")))) {
       ClosedOrderRequestDto closedOrderRequestDto = ClosedOrderRequestDto.builder()
             .startTime(startTime.format(timestampFormatter))
-            .endTime(endTime.format(timestampFormatter))
-            .limit(1000)
+            .state("done")
+            .limit("1000")
             .orderBy("asc")
             .build();
 
       String url = UpbitApi.GET_CLOSED_ORDER.getUrl();
-      String parameters = CharacterUtility.createQueryString(closedOrderRequestDto);
+      String parameters = CharacterUtility.createQueryString(closedOrderRequestDto, true);
 
-      URI uri = UriComponentsBuilder.fromHttpUrl(url + "?" + parameters).build().toUri();
+      URI uri = URI.create(url + "?" + parameters);
 
       String authorizationToken = authorizationGenerator.generateTokenWithParameter(
             closedOrderRequestDto);
 
       List<ClosedOrderResponseDto> response =
             externalUtility.getWithAuth(uri, ClosedOrderResponseDto.class, authorizationToken);
-
       if (response != null) {
         allClosedOrders.addAll(response);
         closedOrderService.saveClosedOrder(allClosedOrders);
       }
 
       // Increment the time range by 1 hour
-      startTime = endTime.minusMinutes(1);
-      endTime = startTime.plusHours(1).minusSeconds(1);
-
+      startTime = startTime.plusHours(1); // 1초 추가하여 다음 시작 시간 설정
+      TimeUtility.sleep(1);
     }
 
     return allClosedOrders;
@@ -335,7 +349,7 @@ public class UpbitService {
           .filter(ticker -> ticker.getChange().equals(UpbitType.TICKER_CHANGE_RISE.getType()))
           .filter(ticker -> ticker.getAccTradePrice24h().compareTo(
                 BigDecimal.valueOf(10_000_000_000L)) > 0)
-          .filter(ticker -> ticker.getChangeRate() >= 0.025)
+          .filter(ticker -> ticker.getChangeRate() >= 0.03)
           .sorted(Comparator.comparing(TickerResponseDto::getSignedChangeRate).reversed())
           .toList();
 

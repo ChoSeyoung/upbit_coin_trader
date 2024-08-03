@@ -39,7 +39,7 @@ public class ExternalUtility {
   }
 
   public <T> List<T> getWithoutAuth(URI uri, Class<T> responseType) {
-//    ColorfulConsoleOutput.printWithColor("GET Request Uri: " + uri, ColorfulConsoleOutput.PURPLE);
+     ColorfulConsoleOutput.printWithColor("GET Request Uri: " + uri, ColorfulConsoleOutput.PURPLE);
 
     return webClient.get()
           .uri(uri)
@@ -52,7 +52,7 @@ public class ExternalUtility {
   }
 
   public <T> List<T> getWithAuth(URI uri, Class<T> responseType, String authorizationToken) {
-//    ColorfulConsoleOutput.printWithColor("GET Request Uri: " + uri, ColorfulConsoleOutput.PURPLE);
+     ColorfulConsoleOutput.printWithColor("GET Request Uri: " + uri, ColorfulConsoleOutput.PURPLE);
 
     return webClient.get()
           .uri(uri)
