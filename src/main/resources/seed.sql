@@ -21,13 +21,12 @@ CREATE TABLE closed_orders
     time_in_force    VARCHAR(20) NOT NULL
 );
 
-CREATE TABLE closed_orders_report
+create table closed_orders_report
 (
-    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
-    market      VARCHAR(20) NOT NULL,
-    report_date DATE        NOT NULL,
-    report_hour INT         NOT NULL,
-    profit      DOUBLE      NOT NULL
+    market varchar(255)   not null
+        primary key,
+    profit double         not null,
+    amount decimal(38, 2) not null
 );
 
 create table configs
@@ -44,6 +43,6 @@ VALUES ('scheduled_market', 'KRW-BTC, KRW-XRP, KRW-ETH');
 INSERT INTO configs (name, val)
 VALUES ('exchange_fee_ratio', '1.0005');
 INSERT INTO configs (name, val)
-VALUES ('take_profit_percentage', '1.0');
+VALUES ('take_profit_percentage', '0.3');
 INSERT INTO configs (name, val)
 VALUES ('min_order_amount', '5100');

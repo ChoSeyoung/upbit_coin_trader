@@ -1,13 +1,10 @@
 package my.trader.coin.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.util.Date;
 import lombok.Getter;
 import lombok.Setter;
 

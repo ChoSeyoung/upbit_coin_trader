@@ -1,6 +1,7 @@
 package my.trader.coin.model;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,10 +12,8 @@ import lombok.Setter;
 @Setter
 public class ClosedOrderReport {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+  @Column(name = "market", nullable = false)
   private String market;
-  private LocalDate reportDate;
-  private Integer reportHour;
+  private BigDecimal amount;
   private Double profit;
 }

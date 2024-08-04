@@ -246,7 +246,7 @@ public class UpbitService {
       }
     } else {
       // 초기화 요청인 경우 2024-6-16 22:00:00 기준으로 시작되어 현재시간까지 반복되어야한다.
-      startTime = OffsetDateTime.of(2024, 6, 16, 22, 0, 0, 0, ZoneOffset.ofHours(9));
+      startTime = OffsetDateTime.of(2024, 7, 26, 0, 0, 0, 0, ZoneOffset.ofHours(9));
       // closed_orders 테이블 초기화
       closedOrderService.initClosedOrders();
     }
@@ -254,8 +254,12 @@ public class UpbitService {
     // formatter 설정
     DateTimeFormatter timestampFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
+    // 전체 마감 데이터
     List<ClosedOrderResponseDto> allClosedOrders = new ArrayList<>();
-    while (startTime.isBefore(OffsetDateTime.now(ZoneId.of("Asia/Seoul")))) {
+    // while 문 종료 시간 설정
+    OffsetDateTime now = OffsetDateTime.now(ZoneId.of("Asia/Seoul"));
+    // 종료시간 까지 반복
+    while (startTime.isBefore(now)) {
       ClosedOrderRequestDto closedOrderRequestDto = ClosedOrderRequestDto.builder()
             .startTime(startTime.format(timestampFormatter))
             .state("done")

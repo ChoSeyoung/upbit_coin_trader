@@ -1,25 +1,23 @@
 package my.trader.coin.scheduler;
 
 import java.text.DecimalFormat;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import my.trader.coin.dto.exchange.AccountResponseDto;
 import my.trader.coin.dto.exchange.CancelOrderResponseDto;
 import my.trader.coin.dto.exchange.OrderResponseDto;
-import my.trader.coin.dto.quotation.MarketResponseDto;
 import my.trader.coin.dto.quotation.TickerResponseDto;
 import my.trader.coin.enums.*;
 import my.trader.coin.model.Config;
 import my.trader.coin.service.ClosedOrderReportService;
 import my.trader.coin.service.ConfigService;
-import my.trader.coin.service.InventoryService;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.strategy.ScalpingStrategy;
 import my.trader.coin.util.MathUtility;
 import my.trader.coin.util.TimeUtility;
+import my.trader.coin.util.WebScraper;
+import my.trader.coin.vo.StaticConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -38,6 +36,7 @@ public class UpbitScheduler {
   private final ScalpingStrategy scalpingStrategy;
   private final ConfigService configService;
   private final ClosedOrderReportService closedOrderReportService;
+  private final WebScraper webScraper;
 
   // 콘솔 데이터 출력용 formatter
   DecimalFormat df = new DecimalFormat("#,##0.00");
@@ -53,25 +52,37 @@ public class UpbitScheduler {
   public UpbitScheduler(
         UpbitService upbitService,
         ScalpingStrategy scalpingStrategy,
-        ConfigService configService, ClosedOrderReportService closedOrderReportService
+        ConfigService configService,
+        ClosedOrderReportService closedOrderReportService,
+        WebScraper webScraper
   ) {
     this.upbitService = upbitService;
     this.scalpingStrategy = scalpingStrategy;
     this.configService = configService;
     this.closedOrderReportService = closedOrderReportService;
+    this.webScraper = webScraper;
   }
 
   /**
    * 매일 수익률 계산 리포트를 생성합니다.
    */
-//  @Scheduled(cron = "0 0 0 * * *") // 매 시간마다 실행
-//  public void runProfitAnalysis() {
-//    // 거래 마감 데이터 생성
-//    upbitService.initializeClosedOrders();
-//
-//    // 거래 마감 보고서 생성
-//    closedOrderReportService.generateHourlyReport();
-//  }
+  @Scheduled(cron = "0 0 0 * * *") // 매 시간마다 실행
+  public void runProfitAnalysis() {
+    // 거래 마감 데이터 생성
+    upbitService.initializeClosedOrders("scheduler");
+
+    // 거래 마감 보고서 생성
+    closedOrderReportService.generateHourlyReport();
+  }
+
+  /**
+   * UBMI 지수 스크래핑.
+   * 현재 업비트 제공하지 않음
+   */
+  @Scheduled(cron = "0 * * * * *")
+  public void updateUpbitMarketIndexRatio() {
+    webScraper.fetchUpbitMarketIndexRatio();
+  }
 
   /**
    * 매 분마다 시장 데이터를 가져오고 스캘핑 전략을 실행합니다.

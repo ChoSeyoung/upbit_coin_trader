@@ -10,6 +10,7 @@ import my.trader.coin.model.Config;
 import my.trader.coin.service.ConfigService;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.util.MathUtility;
+import my.trader.coin.vo.StaticConfig;
 import org.springframework.stereotype.Service;
 
 /**
@@ -41,7 +42,10 @@ public class ScalpingStrategy {
     ColorfulConsoleOutput.printWithColor(String.format("RSI: %s", rsi),
           ColorfulConsoleOutput.RED);
 
-    return (rsi <= 35) ? Signal.BUY : Signal.NO_ACTION;
+    // UBMI 인덱스를 활용한 매수 RSI 기준 값 변경
+    double standardRsi = (StaticConfig.getUpbitMarketIndexRatio() > 10) ? 35 : 30;
+
+    return (rsi <= standardRsi) ? Signal.BUY : Signal.NO_ACTION;
   }
 
   /**
@@ -103,7 +107,7 @@ public class ScalpingStrategy {
       double rsi = upbitService.calculateRelativeStrengthIndex(market, 14);
 
       // 손절목표 금액에 도달한경우 손절 신호 발생
-      if (rsi >= 70 && profitRate < -2.0) {
+      if (rsi >= 65 && profitRate < -1) {
         return Signal.STOP_LOSS;
       }
 

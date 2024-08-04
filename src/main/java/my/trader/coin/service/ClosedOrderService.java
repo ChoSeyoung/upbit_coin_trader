@@ -40,7 +40,7 @@ public class ClosedOrderService {
     closedOrder.setPrice(dto.getPrice());
     closedOrder.setState(dto.getState());
     closedOrder.setMarket(dto.getMarket());
-    closedOrder.setCreatedAt(dto.getCreatedAt());
+    closedOrder.setCreatedAt(dto.getCreatedAt().plusHours(9));
     closedOrder.setVolume(dto.getVolume());
     closedOrder.setRemainingVolume(dto.getRemainingVolume());
     closedOrder.setReservedFee(dto.getReservedFee());

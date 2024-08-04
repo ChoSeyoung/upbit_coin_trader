@@ -26,7 +26,7 @@ POST http://localhost:8080/init/orders/closed
 Content-Type: application/json
 
 {
-  "type" : "scheduler"
+  "type" : "init"
 }
 
 ###

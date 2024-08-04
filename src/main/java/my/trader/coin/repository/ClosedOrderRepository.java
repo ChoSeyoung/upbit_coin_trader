@@ -9,14 +9,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface ClosedOrderRepository extends JpaRepository<ClosedOrder, String> {
-  List<ClosedOrder> findByMarketAndCreatedAtBetween(String market, OffsetDateTime start, OffsetDateTime end);
-
   @Query("SELECT DISTINCT market FROM ClosedOrder")
   List<String> findDistinctMarkets();
 
-  @Query("SELECT MAX(c.createdAt) FROM ClosedOrder c")
+  @Query("SELECT MAX(createdAt) FROM ClosedOrder")
   OffsetDateTime findLastCreatedAt();
 
-  @Query("SELECT MIN(c.createdAt) FROM ClosedOrder c")
-  OffsetDateTime findEarliestCreatedAt();
+  List<ClosedOrder> findByMarket(String market);
 }

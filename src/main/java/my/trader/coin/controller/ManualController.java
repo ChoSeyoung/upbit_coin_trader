@@ -57,6 +57,6 @@ public class ManualController {
 
   @PostMapping("/init/scheduled/report")
   public void initScheduledReport() {
-    closedOrderReportService.generateHourlyReport(false);
+    closedOrderReportService.generateHourlyReport();
   }
 }
