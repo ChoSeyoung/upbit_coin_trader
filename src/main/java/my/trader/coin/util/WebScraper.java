@@ -42,12 +42,27 @@ public class WebScraper implements DisposableBean {
     try {
       driver.get(url);
       // XPath를 사용하여 특정 요소를 선택
+      WebElement parentElement = driver.findElement(By.xpath(
+            "//*[@id=\"__layout\"]/div/div[2]/section/div/div[2]/div/div/div[1]/div[2]/div[1]/div/div"));
       WebElement element = driver.findElement(By.xpath(
             "//*[@id=\"__layout\"]/div/div[2]/section/div/div[2]/div/div/div[1]/div[2]/div[1]/div/div/div[3]"));
 
-      String data = element.getText().replaceAll("[^0-9.]", "");
+      // 상위 요소의 클래스명 추출
+      String className = parentElement.getAttribute("class");
 
-      StaticConfig.setUpbitMarketIndexRatio(Double.parseDouble(data));
+      // 클래스명을 공백 단위로 쪼개고 rise가 있는지 확인
+      String[] classNames = className.split("\\s+");
+      int multiply = -1;
+      for (String cls : classNames) {
+        if (cls.contains("rise")) {
+          multiply = 1;
+          break;
+        }
+      }
+
+      // 요소의 텍스트 데이터 추출
+      String data = element.getText().replaceAll("[^0-9.]", "");
+      StaticConfig.setUpbitMarketIndexRatio(Double.parseDouble(data) * multiply);
 
       System.out.println("Current Upbit Market Index: " + StaticConfig.getUpbitMarketIndexRatio());
       // 추가적으로 데이터를 저장하거나 처리하는 로직을 작성합니다.
