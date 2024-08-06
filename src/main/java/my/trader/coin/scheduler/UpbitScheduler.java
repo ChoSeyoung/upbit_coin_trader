@@ -64,18 +64,6 @@ public class UpbitScheduler {
   }
 
   /**
-   * 매일 수익률 계산 리포트를 생성합니다.
-   */
-  @Scheduled(cron = "0 0 0 * * *") // 매 시간마다 실행
-  public void runProfitAnalysis() {
-    // 거래 마감 데이터 생성
-    upbitService.initializeClosedOrders("scheduler");
-
-    // 거래 마감 보고서 생성
-    closedOrderReportService.generateHourlyReport();
-  }
-
-  /**
    * UBMI 지수 스크래핑.
    * 현재 업비트 제공하지 않음
    */

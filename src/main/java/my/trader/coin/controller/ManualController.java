@@ -46,8 +46,10 @@ public class ManualController {
   }
 
   @PostMapping("/init/orders/closed")
-  public List<ClosedOrderResponseDto> initClosedOrders(@RequestBody(required = false) String type) {
-    return upbitService.initializeClosedOrders(type);
+  public List<ClosedOrderResponseDto> initClosedOrders(
+        @RequestBody(required = false) Map<String, Object> requestBody) {
+
+    return upbitService.initializeClosedOrders(requestBody.get("type").toString());
   }
 
   @PostMapping("/init/scheduled/market")
@@ -57,6 +59,6 @@ public class ManualController {
 
   @PostMapping("/init/scheduled/report")
   public void initScheduledReport() {
-    closedOrderReportService.generateHourlyReport();
+    closedOrderReportService.generateReport();
   }
 }

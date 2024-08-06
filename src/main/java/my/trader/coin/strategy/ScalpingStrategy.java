@@ -43,7 +43,7 @@ public class ScalpingStrategy {
           ColorfulConsoleOutput.RED);
 
     // UBMI 인덱스를 활용한 매수 RSI 기준 값 변경
-    double standardRsi = (StaticConfig.getUpbitMarketIndexRatio() > 10) ? 35 : 30;
+    double standardRsi = (StaticConfig.getUpbitMarketIndexRatio() > 10) ? 35 : 32;
 
     return (rsi <= standardRsi) ? Signal.BUY : Signal.NO_ACTION;
   }

@@ -16,4 +16,6 @@ public interface ClosedOrderRepository extends JpaRepository<ClosedOrder, String
   OffsetDateTime findLastCreatedAt();
 
   List<ClosedOrder> findByMarket(String market);
+
+  List<ClosedOrder> findByMarketOrderByCreatedAtAsc(String market);
 }

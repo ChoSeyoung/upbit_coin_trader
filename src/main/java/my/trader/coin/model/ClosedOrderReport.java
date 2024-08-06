@@ -14,6 +14,13 @@ public class ClosedOrderReport {
   @Id
   @Column(name = "market", nullable = false)
   private String market;
-  private BigDecimal amount;
-  private Double profit;
+  private BigDecimal amount = BigDecimal.ZERO;
+
+  @PrePersist
+  @PreUpdate
+  private void prePersistOrUpdate() {
+    if (amount == null) {
+      amount = BigDecimal.ZERO;
+    }
+  }
 }
