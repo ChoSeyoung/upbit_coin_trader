@@ -2,7 +2,7 @@
 
 ## (참고) 개발자 개발 환경
 - MacBook Pro 16" Apple M3 Pro 36GB SONOMA
-- IntelliJ, Docker Desktop, DataGrip
+- IntelliJ
 - CheckStyle-IDEA Plugin (Google Check)
   - IDEA 종속된 플러그인을 사용합니다만, 타 IDEA 에서 PR 생성 후 요청주시면 코드 검토 후 승인하겠습니다.
   - 해당 플러그인 관련된 설정은 config/checkstyle.xml 파일로 설정합니다.
@@ -11,7 +11,6 @@
 ## 사전 요구 사항
 - Java Development Kit 22 이상
 - Gradle (IntelliJ 를 사용하고 있다면 설치할 필요 없습니다)
-- Docker Desktop
 - chromedriver (brew 로 설치)
 
 ## 설정 지침
@@ -39,15 +38,7 @@ upbit.api.key=${your_api_key_here}
 upbit.secret.key=${your_secret_key_here}
 ```
 
-### 4. Docker 를 이용한 local mysql 실행
-```sh
-cd docker/mysql
-# 필요시 docker-compose.yml 파일을 변경할 수 있습니다. (포트 및 기타설정 등등)
-# 해당 컨테이너의 데이터 디렉토리는 ${ProjectRootDirectory}/docker/mysql/data 에 쌓이므로 mysql 을 기본적으로 사용하고 있는 PC 에서도 데이터 이슈 없이 사용할 수 있습니다.
-docker-compose up
-```
-
-### 5. seed.sql 를 이용한 데이터 시딩
+### 4. seed.sql 를 이용한 데이터 시딩
 ```sql
 use upbit;
 
