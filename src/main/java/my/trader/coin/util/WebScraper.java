@@ -1,7 +1,8 @@
 package my.trader.coin.util;
 
 import java.time.Duration;
-import my.trader.coin.vo.StaticConfig;
+import my.trader.coin.config.AppConfig;
+import my.trader.coin.enums.ColorfulConsoleOutput;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -62,10 +63,12 @@ public class WebScraper implements DisposableBean {
 
       // 요소의 텍스트 데이터 추출
       String data = element.getText().replaceAll("[^0-9.]", "");
-      StaticConfig.setUpbitMarketIndexRatio(Double.parseDouble(data) * multiply);
 
-      System.out.println("Current Upbit Market Index: " + StaticConfig.getUpbitMarketIndexRatio());
-      // 추가적으로 데이터를 저장하거나 처리하는 로직을 작성합니다.
+      AppConfig.setUpbitMarketIndexRatio(Double.parseDouble(data) * multiply);
+
+      ColorfulConsoleOutput.printWithColor(
+            "Current Upbit Market Index: " + AppConfig.upbitMarketIndexRatio,
+            ColorfulConsoleOutput.PURPLE);
     } catch (Exception e) {
       logger.error("스크래핑 중 에러 발생", e);
     }

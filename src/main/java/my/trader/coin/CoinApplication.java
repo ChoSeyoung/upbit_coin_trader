@@ -1,5 +1,6 @@
 package my.trader.coin;
 
+import my.trader.coin.service.UpbitService;
 import my.trader.coin.util.WebScraper;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -18,9 +19,11 @@ import org.springframework.context.annotation.ComponentScan;
 public class CoinApplication {
 
   private final WebScraper webScraper;
+  private final UpbitService upbitService;
 
-  public CoinApplication(WebScraper webScraper) {
+  public CoinApplication(WebScraper webScraper, UpbitService upbitService) {
     this.webScraper = webScraper;
+    this.upbitService = upbitService;
   }
 
   public static void main(String[] args) {
@@ -37,6 +40,8 @@ public class CoinApplication {
     return args -> {
       // UBMI 지수 초기 값 설정.
       webScraper.fetchUpbitMarketIndexRatio();
+      // 종목 초기 설정
+      upbitService.selectScheduledMarket();
     };
   }
 }

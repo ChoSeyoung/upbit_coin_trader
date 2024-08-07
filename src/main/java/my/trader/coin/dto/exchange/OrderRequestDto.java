@@ -17,28 +17,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderRequestDto {
-  @NotNull(message = "Market is required")
   private String market;
-
-  @NotNull(message = "Side is required")
-  @Pattern(regexp = "^(bid|ask)$",
-        message = "Side must be either 'bid' or 'ask'")
   private String side;
-
-  @Positive(message = "Volume must be greater than zero")
   private Double volume;
-
-  @Positive(message = "Price must be greater than zero")
   private Double price;
-
-  @NotNull(message = "Order type is required")
-  @Pattern(regexp = "^(limit|price|market|best)$",
-        message = "Order type must be one of 'limit', 'price', 'market', or 'best'")
   private String ordType;
-
   private String identifier;
-
-  @Pattern(regexp = "^(ioc|fok)?$",
-        message = "Time in force must be either 'ioc' or 'fok'")
   private String timeInForce;
 }

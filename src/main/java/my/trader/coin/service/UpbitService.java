@@ -2,22 +2,14 @@ package my.trader.coin.service;
 
 import java.math.BigDecimal;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
+import my.trader.coin.config.AppConfig;
 import my.trader.coin.dto.exchange.*;
 import my.trader.coin.dto.quotation.*;
 import my.trader.coin.enums.ColorfulConsoleOutput;
 import my.trader.coin.enums.Unit;
 import my.trader.coin.enums.UpbitApi;
 import my.trader.coin.enums.UpbitType;
-import my.trader.coin.model.Config;
-import my.trader.coin.repository.ClosedOrderRepository;
 import my.trader.coin.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -26,19 +18,11 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class UpbitService {
   private final AuthorizationGenerator authorizationGenerator;
   private final ExternalUtility externalUtility;
-  private final ClosedOrderService closedOrderService;
-  private final ConfigService configService;
-  private final ClosedOrderRepository closedOrderRepository;
 
   public UpbitService(AuthorizationGenerator authorizationGenerator,
-                      ExternalUtility externalUtility,
-                      ClosedOrderService closedOrderService, ConfigService configService,
-                      ClosedOrderRepository closedOrderRepository) {
+                      ExternalUtility externalUtility) {
     this.authorizationGenerator = authorizationGenerator;
     this.externalUtility = externalUtility;
-    this.closedOrderService = closedOrderService;
-    this.configService = configService;
-    this.closedOrderRepository = closedOrderRepository;
   }
 
   public List<MarketResponseDto> getMarket() {
@@ -232,64 +216,6 @@ public class UpbitService {
     return results;
   }
 
-  public List<ClosedOrderResponseDto> initializeClosedOrders(String type) {
-    OffsetDateTime startTime;
-
-    if ("scheduler".equals(type)) {
-      // 스케줄러를 통한 경우, closed_order 테이블에서 created_at 이 가장 마지막 데이터를 기준으로 1초 추가 되어야한다.
-      OffsetDateTime lastCreatedAt = closedOrderRepository.findLastCreatedAt();
-      if (lastCreatedAt == null) {
-        // DB에 데이터가 없는 경우 현재 날짜로 세팅
-        startTime = OffsetDateTime.now(ZoneOffset.ofHours(9));
-      } else {
-        startTime = lastCreatedAt.plusSeconds(1);
-      }
-    } else {
-      // 초기화 요청인 경우 2024-6-16 22:00:00 기준으로 시작되어 현재시간까지 반복되어야한다.
-      startTime = OffsetDateTime.of(2024, 7, 26, 0, 0, 0, 0, ZoneOffset.ofHours(9));
-      // closed_orders 테이블 초기화
-      closedOrderService.initClosedOrders();
-    }
-
-    // formatter 설정
-    DateTimeFormatter timestampFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-
-    // 전체 마감 데이터
-    List<ClosedOrderResponseDto> allClosedOrders = new ArrayList<>();
-    // while 문 종료 시간 설정
-    OffsetDateTime now = OffsetDateTime.now(ZoneId.of("Asia/Seoul"));
-    // 종료시간 까지 반복
-    while (startTime.isBefore(now)) {
-      ClosedOrderRequestDto closedOrderRequestDto = ClosedOrderRequestDto.builder()
-            .startTime(startTime.format(timestampFormatter))
-            .state("done")
-            .limit("1000")
-            .orderBy("asc")
-            .build();
-
-      String url = UpbitApi.GET_CLOSED_ORDER.getUrl();
-      String parameters = CharacterUtility.createQueryString(closedOrderRequestDto, true);
-
-      URI uri = URI.create(url + "?" + parameters);
-
-      String authorizationToken = authorizationGenerator.generateTokenWithParameter(
-            closedOrderRequestDto);
-
-      List<ClosedOrderResponseDto> response =
-            externalUtility.getWithAuth(uri, ClosedOrderResponseDto.class, authorizationToken);
-      if (response != null) {
-        allClosedOrders.addAll(response);
-        closedOrderService.saveClosedOrder(allClosedOrders);
-      }
-
-      // Increment the time range by 1 hour
-      startTime = startTime.plusHours(1); // 1초 추가하여 다음 시작 시간 설정
-      TimeUtility.sleep(1);
-    }
-
-    return allClosedOrders;
-  }
-
   /**
    * 지수 이동 평균 데이터를 기준으로 RSI 지표 조회.
    *
@@ -378,16 +304,9 @@ public class UpbitService {
     set.addAll(holdingMarkets);
     set.addAll(defaultMarkets);
 
-    // Set을 콤마로 구분된 문자열로 변환
-    String scheduledMarket = String.join(",", set);
+    AppConfig.setScheduledMarket(new ArrayList<>(set));
 
-    Config config = new Config();
-    config.setName("scheduled_market");
-    config.setVal(scheduledMarket);
-
-    configService.updateConfig(config);
-
-    ColorfulConsoleOutput.printWithColor("종목 업데이트 완료: " + scheduledMarket,
+    ColorfulConsoleOutput.printWithColor("종목 업데이트 완료: " + AppConfig.scheduledMarket,
           ColorfulConsoleOutput.GREEN);
   }
 }

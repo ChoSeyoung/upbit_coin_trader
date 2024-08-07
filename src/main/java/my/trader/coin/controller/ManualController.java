@@ -7,7 +7,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import my.trader.coin.dto.exchange.ClosedOrderResponseDto;
-import my.trader.coin.service.ClosedOrderReportService;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.util.AuthorizationGenerator;
 import org.springframework.web.bind.annotation.*;
@@ -19,14 +18,11 @@ import org.springframework.web.bind.annotation.*;
 public class ManualController {
   private final UpbitService upbitService;
   private final AuthorizationGenerator authorizationGenerator;
-  private final ClosedOrderReportService closedOrderReportService;
 
   public ManualController(UpbitService upbitService,
-                          AuthorizationGenerator authorizationGenerator,
-                          ClosedOrderReportService closedOrderReportService) {
+                          AuthorizationGenerator authorizationGenerator) {
     this.upbitService = upbitService;
     this.authorizationGenerator = authorizationGenerator;
-    this.closedOrderReportService = closedOrderReportService;
   }
 
   /**
@@ -43,22 +39,5 @@ public class ManualController {
     } else {
       return authorizationGenerator.generateTokenWithParameter(requestBody);
     }
-  }
-
-  @PostMapping("/init/orders/closed")
-  public List<ClosedOrderResponseDto> initClosedOrders(
-        @RequestBody(required = false) Map<String, Object> requestBody) {
-
-    return upbitService.initializeClosedOrders(requestBody.get("type").toString());
-  }
-
-  @PostMapping("/init/scheduled/market")
-  public void initScheduledMarket() {
-    upbitService.selectScheduledMarket();
-  }
-
-  @PostMapping("/init/scheduled/report")
-  public void initScheduledReport() {
-    closedOrderReportService.generateReport();
   }
 }

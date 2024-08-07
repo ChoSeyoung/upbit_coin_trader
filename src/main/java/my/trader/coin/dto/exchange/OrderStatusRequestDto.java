@@ -1,7 +1,5 @@
 package my.trader.coin.dto.exchange;
 
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,24 +16,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderStatusRequestDto {
-  @NotNull(message = "Market is required")
   private String market;
-
-  @Size(max = 100, message = "UUIDs list can have at most 100 elements")
   private List<String> uuids;
-
-  @Size(max = 100, message = "Identifiers list can have at most 100 elements")
   private List<String> identifiers;
-
-  @Builder.Default
   private String orderBy = "desc";
-
-  /**
-   * 두 필드의 유효성을 검사합니다. uuids 또는 identifiers 중 하나만 존재해야 합니다.
-   */
-  @jakarta.validation.constraints.AssertTrue(message
-        = "Either uuids or identifiers must be provided, but not both")
-  private boolean isValid() {
-    return (uuids == null || uuids.isEmpty()) ^ (identifiers == null || identifiers.isEmpty());
-  }
 }

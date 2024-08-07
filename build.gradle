@@ -28,11 +28,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'io.github.resilience4j:resilience4j-ratelimiter:1.7.1'
 
-    // db
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0'
-    implementation 'org.hibernate:hibernate-core:6.5.2.Final'
-
     // data
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
@@ -47,7 +42,6 @@ dependencies {
     implementation 'org.seleniumhq.selenium:selenium-java:4.10.0'
     implementation 'io.github.bonigarcia:webdrivermanager:5.4.2'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.2'
-
 
     // logging
     implementation 'org.slf4j:slf4j-api:2.0.9'

@@ -2,22 +2,17 @@ package my.trader.coin.scheduler;
 
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import my.trader.coin.config.AppConfig;
 import my.trader.coin.dto.exchange.AccountResponseDto;
 import my.trader.coin.dto.exchange.CancelOrderResponseDto;
 import my.trader.coin.dto.exchange.OrderResponseDto;
 import my.trader.coin.dto.quotation.TickerResponseDto;
 import my.trader.coin.enums.*;
-import my.trader.coin.model.Config;
-import my.trader.coin.service.ClosedOrderReportService;
-import my.trader.coin.service.ConfigService;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.strategy.ScalpingStrategy;
 import my.trader.coin.util.MathUtility;
 import my.trader.coin.util.TimeUtility;
 import my.trader.coin.util.WebScraper;
-import my.trader.coin.vo.StaticConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -34,8 +29,6 @@ public class UpbitScheduler {
 
   private final UpbitService upbitService;
   private final ScalpingStrategy scalpingStrategy;
-  private final ConfigService configService;
-  private final ClosedOrderReportService closedOrderReportService;
   private final WebScraper webScraper;
 
   // 콘솔 데이터 출력용 formatter
@@ -46,20 +39,14 @@ public class UpbitScheduler {
    *
    * @param upbitService             UpbitService
    * @param scalpingStrategy         ScalpingStrategy
-   * @param configService            ConfigService
-   * @param closedOrderReportService ClosedOrderReportService
    */
   public UpbitScheduler(
         UpbitService upbitService,
         ScalpingStrategy scalpingStrategy,
-        ConfigService configService,
-        ClosedOrderReportService closedOrderReportService,
         WebScraper webScraper
   ) {
     this.upbitService = upbitService;
     this.scalpingStrategy = scalpingStrategy;
-    this.configService = configService;
-    this.closedOrderReportService = closedOrderReportService;
     this.webScraper = webScraper;
   }
 
@@ -96,16 +83,10 @@ public class UpbitScheduler {
   }
 
   private void runBuy() {
-    Config scheduledMarketConfig =
-          configService.getConfByName(CacheKey.SCHEDULED_MARKET.getKey());
-
-    List<String> markets = Stream.of(scheduledMarketConfig.getVal().split(","))
-          .collect(Collectors.toCollection(ArrayList::new));
+    List<String> markets = AppConfig.scheduledMarket;
 
     // 주문 수량 계산
-    Double minimumOrderAmount = Double.parseDouble(
-          configService.getConfByName(CacheKey.MIN_ORDER_AMOUNT.getKey()).getVal()
-    );
+    Double minimumOrderAmount = AppConfig.minOrderAmount;
 
     // 시장 데이터 조회
     List<TickerResponseDto> tickerDataList = upbitService.getTicker(markets);
@@ -147,9 +128,7 @@ public class UpbitScheduler {
 
   private void runSell() {
     // 주문 수량 계산
-    Double minimumOrderAmount = Double.parseDouble(
-          configService.getConfByName(CacheKey.MIN_ORDER_AMOUNT.getKey()).getVal()
-    );
+    Double minimumOrderAmount = AppConfig.minOrderAmount;
 
     // 계좌 조회
     List<AccountResponseDto> accounts = upbitService.getAccount();
@@ -191,10 +170,7 @@ public class UpbitScheduler {
 
             // 전량 매도 플래그 활성화시 익절 시그널 발생되면 전량 매도
             if (sellSignal.equals(Signal.TAKE_PROFIT)) {
-              Config config = configService.getConfByName(CacheKey.WHOLE_SELL_WHEN_PROFIT.getKey());
-              boolean wholeSellWhenProfit = Boolean.parseBoolean(config.getVal());
-
-              if (wholeSellWhenProfit) {
+              if (AppConfig.wholeSellWhenProfit) {
                 quantity = inventory;
               }
             }

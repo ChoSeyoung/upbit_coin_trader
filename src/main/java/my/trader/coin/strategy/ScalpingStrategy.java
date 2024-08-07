@@ -2,15 +2,12 @@ package my.trader.coin.strategy;
 
 import java.util.List;
 import java.util.Optional;
+import my.trader.coin.config.AppConfig;
 import my.trader.coin.dto.exchange.AccountResponseDto;
-import my.trader.coin.enums.CacheKey;
 import my.trader.coin.enums.ColorfulConsoleOutput;
 import my.trader.coin.enums.Signal;
-import my.trader.coin.model.Config;
-import my.trader.coin.service.ConfigService;
 import my.trader.coin.service.UpbitService;
 import my.trader.coin.util.MathUtility;
-import my.trader.coin.vo.StaticConfig;
 import org.springframework.stereotype.Service;
 
 /**
@@ -20,11 +17,9 @@ import org.springframework.stereotype.Service;
 public class ScalpingStrategy {
 
   private final UpbitService upbitService;
-  private final ConfigService configService;
 
-  public ScalpingStrategy(UpbitService upbitService, ConfigService configService) {
+  public ScalpingStrategy(UpbitService upbitService) {
     this.upbitService = upbitService;
-    this.configService = configService;
   }
 
   /**
@@ -43,7 +38,7 @@ public class ScalpingStrategy {
           ColorfulConsoleOutput.RED);
 
     // UBMI 인덱스를 활용한 매수 RSI 기준 값 변경
-    double standardRsi = (StaticConfig.getUpbitMarketIndexRatio() > 10) ? 35 : 32;
+    double standardRsi = (AppConfig.upbitMarketIndexRatio > 10) ? 35 : 32;
 
     return (rsi <= standardRsi) ? Signal.BUY : Signal.NO_ACTION;
   }
@@ -86,14 +81,10 @@ public class ScalpingStrategy {
       }
 
       // 익절 목표 퍼센티지 조회
-      double targetProfit = Double.parseDouble(
-            configService.getConfByName(CacheKey.TAKE_PROFIT_PERCENTAGE.getKey()).getVal()
-      );
+      double targetProfit = AppConfig.takeProfitPercentage;
 
       // 거래소 수수료
-      double exchangeFeeRatio = Double.parseDouble(
-            configService.getConfByName(CacheKey.EXCHANGE_FEE_RATIO.getKey()).getVal()
-      );
+      double exchangeFeeRatio = AppConfig.exchangeFeeRatio;
 
       // 현재 수익률 계산 : (현재가 - (평균매수가 * 1.0005)) / 평균매수가 * 100
       double profitRate = (currentPrice - (account.getAvgBuyPrice() * exchangeFeeRatio))
