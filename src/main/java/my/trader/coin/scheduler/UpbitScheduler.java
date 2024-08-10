@@ -86,7 +86,7 @@ public class UpbitScheduler {
     List<String> markets = AppConfig.scheduledMarket;
 
     // 주문 수량 계산
-    Double minimumOrderAmount = AppConfig.minOrderAmount;
+    Double minimumOrderAmount = AppConfig.minBuyAmount;
 
     // 시장 데이터 조회
     List<TickerResponseDto> tickerDataList = upbitService.getTicker(markets);
@@ -160,7 +160,7 @@ public class UpbitScheduler {
 
           // 매도 시그널 확인
           Signal sellSignal =
-                scalpingStrategy.shouldSell(market, tickerData.getTradePrice(), minimumOrderAmount);
+                scalpingStrategy.shouldSell(market, tickerData.getTradePrice());
 
           // 익절 시그널 발생시
           if (sellSignal.isSellSignal()) {

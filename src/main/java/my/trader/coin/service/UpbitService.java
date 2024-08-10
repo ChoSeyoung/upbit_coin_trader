@@ -279,7 +279,7 @@ public class UpbitService {
           .filter(ticker -> ticker.getChange().equals(UpbitType.TICKER_CHANGE_RISE.getType()))
           .filter(ticker -> ticker.getAccTradePrice24h().compareTo(
                 BigDecimal.valueOf(10_000_000_000L)) > 0)
-          .filter(ticker -> ticker.getChangeRate() >= 0.03)
+//          .filter(ticker -> ticker.getChangeRate() >= 0.03)
           .sorted(Comparator.comparing(TickerResponseDto::getSignedChangeRate).reversed())
           .toList();
 

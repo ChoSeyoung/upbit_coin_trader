@@ -29,7 +29,8 @@ public class ScalpingStrategy {
    * @return 매수 결정시 true
    */
   public Signal shouldBuy(String market) {
-    ColorfulConsoleOutput.printWithColor(String.format("[%s] 매수 의사결정을 위한 가격 확인", market), ColorfulConsoleOutput.RED);
+    ColorfulConsoleOutput.printWithColor(String.format("[%s] 매수 의사결정을 위한 가격 확인", market),
+          ColorfulConsoleOutput.RED);
 
     double rsi = upbitService.calculateRelativeStrengthIndex(market, 14);
 
@@ -48,10 +49,9 @@ public class ScalpingStrategy {
    *
    * @param market             마켓코드
    * @param currentPrice       매도가
-   * @param minimumOrderAmount 보유량
    * @return 매도 결정시 true
    */
-  public Signal shouldSell(String market, Double currentPrice, Double minimumOrderAmount) {
+  public Signal shouldSell(String market, Double currentPrice) {
     ColorfulConsoleOutput.printWithColor(String.format("[%s] 매도 의사결정을 위한 가격 확인", market),
           ColorfulConsoleOutput.BLUE);
 

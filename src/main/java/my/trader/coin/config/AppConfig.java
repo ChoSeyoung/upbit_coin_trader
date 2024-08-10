@@ -16,6 +16,8 @@ public class AppConfig {
   public static boolean wholeSellWhenProfit;
   public static double exchangeFeeRatio;
   public static double minOrderAmount;
+  public static double minBuyAmount;
+  public static double minSellAmount;
   public static double takeProfitPercentage;
 
   static {
@@ -25,6 +27,8 @@ public class AppConfig {
     wholeSellWhenProfit = true;
     exchangeFeeRatio = 1.0005;
     minOrderAmount = 5100;
-    takeProfitPercentage = 0.3;
+    minBuyAmount = 10000;
+    minSellAmount = 5001;
+    takeProfitPercentage = 0.5;
   }
 }
