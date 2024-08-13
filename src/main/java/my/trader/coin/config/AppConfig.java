@@ -27,7 +27,7 @@ public class AppConfig {
     wholeSellWhenProfit = true;
     exchangeFeeRatio = 1.0005;
     minOrderAmount = 5100;
-    minBuyAmount = 10000;
+    minBuyAmount = 6000;
     minSellAmount = 5001;
     takeProfitPercentage = 0.5;
   }
