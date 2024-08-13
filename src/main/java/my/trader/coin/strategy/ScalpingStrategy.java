@@ -98,7 +98,7 @@ public class ScalpingStrategy {
       double rsi = upbitService.calculateRelativeStrengthIndex(market, 14);
 
       // 손절목표 금액에 도달한경우 손절 신호 발생
-      if (rsi >= 65 && profitRate < -1) {
+      if (rsi >= 65 && profitRate < -2) {
         return Signal.STOP_LOSS;
       }
 
