@@ -12,6 +12,8 @@
 - Java Development Kit 22 이상
 - Gradle (IntelliJ 를 사용하고 있다면 설치할 필요 없습니다)
 - chromedriver (brew 로 설치)
+  - ubmi 지수를 받아오기 위해 설치합니다.
+  - 해당 패키지를 설치하기 부담스러우신 분들은 fetchUpbitMarketIndexRatio 메소드를 적절히 수정하시기 바랍니다.
 
 ## 설정 지침
 
@@ -36,13 +38,6 @@ cp src/main/resources/application.properties.example src/main/resources/applicat
 upbit.api.key=${your_api_key_here}
 # 업비트 SECRET KEY 를 확인하세요
 upbit.secret.key=${your_secret_key_here}
-```
-
-### 4. seed.sql 를 이용한 데이터 시딩
-```sql
-use upbit;
-
-...
 ```
 ---
 
