@@ -81,7 +81,12 @@ public class ScalpingStrategy {
       }
 
       // 익절 목표 퍼센티지 조회
-      double targetProfit = AppConfig.takeProfitPercentage;
+      double targetProfit;
+      if (buyAmount > 100000) {
+        targetProfit = AppConfig.takeProfitPercentage * 0.6;
+      } else {
+        targetProfit = AppConfig.takeProfitPercentage;
+      }
 
       // 거래소 수수료
       double exchangeFeeRatio = AppConfig.exchangeFeeRatio;
