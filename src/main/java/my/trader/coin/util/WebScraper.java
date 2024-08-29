@@ -1,6 +1,8 @@
 package my.trader.coin.util;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import my.trader.coin.config.AppConfig;
 import my.trader.coin.enums.ColorfulConsoleOutput;
 import org.openqa.selenium.By;
@@ -37,6 +39,9 @@ public class WebScraper implements DisposableBean {
     }
   }
 
+  /**
+   * UBMI 지수 업데이트.
+   */
   public void fetchUpbitMarketIndexRatio() {
     String url = "https://www.ubcindex.com/indexes/IDX.UPBIT.UBMI";
 
@@ -66,9 +71,53 @@ public class WebScraper implements DisposableBean {
 
       AppConfig.setUpbitMarketIndexRatio(Double.parseDouble(data) * multiply);
 
+      // 인덱스가 0% 미만으로 내려가는 경우 매매 중지
+      AppConfig.setHoldTrade(AppConfig.upbitMarketIndexRatio < 0.0);
+
       ColorfulConsoleOutput.printWithColor(
             "Current Upbit Market Index: " + AppConfig.upbitMarketIndexRatio,
             ColorfulConsoleOutput.PURPLE);
+    } catch (Exception e) {
+      logger.error("스크래핑 중 에러 발생", e);
+    }
+  }
+
+  /**
+   * 마켓 시가총액을 기준으로 종목 선정.
+   */
+  public void fetchHighMarketCapitalization() {
+    List<String> result = new ArrayList<>();
+
+    String url = "https://www.ubcindex.com/indexes/IDX.UPBIT.UBMI";
+
+    try {
+      driver.get(url);
+
+      WebElement parentElement = driver.findElement(By.xpath(
+            "//*[@id=\"__layout\"]/div/div[2]/section/div/div[2]/div/div/div[2]/table/tbody/tr/td/div/div"));
+
+      // 자식 엘리먼트들(basketItem 클래스)을 모두 찾기
+      List<WebElement> basketItems =
+            parentElement.findElements(By.xpath(".//div[@class='basketItem']"));
+
+      for (WebElement item : basketItems) {
+        // code 클래스에서 코인 코드 가져오기
+        WebElement codeElement = item.findElement(By.xpath(".//div[@class='code']"));
+        String[] coinCodes = codeElement.getText().split("/");
+
+        // ratio 클래스에서 비율 가져오기 (추가적으로 필요하다면)
+        WebElement ratioElement = item.findElement(By.xpath(".//div[@class='ratio']"));
+        String coinRatioText = ratioElement.getText();
+        double coinRatio = Double.parseDouble(coinRatioText.replaceAll("[^\\d.]", ""));
+
+        if (coinRatio > 1.0) {
+          result.add(coinCodes[1] + "-" + coinCodes[0]);
+        } else {
+          break;
+        }
+      }
+
+      AppConfig.setScheduledMarket(result);
     } catch (Exception e) {
       logger.error("스크래핑 중 에러 발생", e);
     }

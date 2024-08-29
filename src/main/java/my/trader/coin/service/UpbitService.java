@@ -265,6 +265,9 @@ public class UpbitService {
     return 100 - (100 / (1 + (au / ad)));
   }
 
+  /**
+   * 종목 선정.
+   */
   public void selectScheduledMarket() {
     List<MarketResponseDto> marketResponses = getMarket();
 
@@ -278,7 +281,7 @@ public class UpbitService {
     List<TickerResponseDto> analyzedTickers = tickers.stream()
           .filter(ticker -> ticker.getChange().equals(UpbitType.TICKER_CHANGE_RISE.getType()))
           .filter(ticker -> ticker.getAccTradePrice24h().compareTo(
-                BigDecimal.valueOf(10_000_000_000L)) > 0)
+                BigDecimal.valueOf(30_000_000_000L)) > 0)
           .filter(ticker -> ticker.getChangeRate() > 0)
           .sorted(Comparator.comparing(TickerResponseDto::getSignedChangeRate).reversed())
           .toList();
@@ -303,6 +306,26 @@ public class UpbitService {
     set.addAll(popularMarkets);
     set.addAll(holdingMarkets);
     set.addAll(defaultMarkets);
+
+    AppConfig.setScheduledMarket(new ArrayList<>(set));
+
+    ColorfulConsoleOutput.printWithColor("종목 업데이트 완료: " + AppConfig.scheduledMarket,
+          ColorfulConsoleOutput.GREEN);
+  }
+
+  /**
+   * 기종목에 보유 종목 추가.
+   */
+  public void addScheduledMarket() {
+    List<AccountResponseDto> accounts = this.getAccount();
+    List<String> holdingMarkets = accounts.stream()
+          .filter(account -> !"KRW".equals(account.getCurrency()))
+          .map(account -> account.getUnitCurrency() + "-" + account.getCurrency())
+          .toList();
+
+    Set<String> set = new HashSet<>();
+    set.addAll(AppConfig.scheduledMarket);
+    set.addAll(holdingMarkets);
 
     AppConfig.setScheduledMarket(new ArrayList<>(set));
 

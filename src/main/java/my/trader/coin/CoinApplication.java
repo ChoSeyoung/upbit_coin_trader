@@ -40,8 +40,12 @@ public class CoinApplication {
     return args -> {
       // UBMI 지수 초기 값 설정.
       webScraper.fetchUpbitMarketIndexRatio();
+
       // 종목 초기 설정
-      upbitService.selectScheduledMarket();
+      webScraper.fetchHighMarketCapitalization();
+      upbitService.addScheduledMarket();
+
+      // something else
     };
   }
 }

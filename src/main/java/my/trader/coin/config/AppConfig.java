@@ -12,6 +12,8 @@ public class AppConfig {
   public static double upbitMarketIndexRatio;
   @Setter
   public static List<String> scheduledMarket;
+  @Setter
+  public static boolean holdTrade;
 
   public static boolean wholeSellWhenProfit;
   public static double exchangeFeeRatio;
@@ -23,6 +25,7 @@ public class AppConfig {
   static {
     upbitMarketIndexRatio = 0.0;
     scheduledMarket = new ArrayList<>(Arrays.asList("KRW-BTC", "KRW-XRP", "KRW-ETH"));
+    holdTrade = true;
 
     wholeSellWhenProfit = true;
     exchangeFeeRatio = 1.0005;

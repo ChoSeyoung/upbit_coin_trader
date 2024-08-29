@@ -7,7 +7,6 @@ import my.trader.coin.dto.exchange.AccountResponseDto;
 import my.trader.coin.enums.ColorfulConsoleOutput;
 import my.trader.coin.enums.Signal;
 import my.trader.coin.service.UpbitService;
-import my.trader.coin.util.MathUtility;
 import org.springframework.stereotype.Service;
 
 /**
@@ -54,10 +53,6 @@ public class ScalpingStrategy {
   public Signal shouldSell(String market, Double currentPrice) {
     ColorfulConsoleOutput.printWithColor(String.format("[%s] 매도 의사결정을 위한 가격 확인", market),
           ColorfulConsoleOutput.BLUE);
-
-    // TODO. RSI 기준으로 매도 작업을 진행하게 되는 경우 아래 코드를 참고하세요
-    // List<Double> closePrices = upbitService.getClosePrices(market, 15);
-    // double rsi = MathUtility.calculateRsi(closePrices, 14);
 
     String currency = market.split("-")[1];
     List<AccountResponseDto> accounts = upbitService.getAccount();
