@@ -37,10 +37,7 @@ public class ScalpingStrategy {
     ColorfulConsoleOutput.printWithColor(String.format("RSI: %s", rsi),
           ColorfulConsoleOutput.RED);
 
-    // UBMI 인덱스를 활용한 매수 RSI 기준 값 변경
-    double standardRsi = (AppConfig.upbitMarketIndexRatio > 10) ? 35 : 32;
-
-    return (rsi <= standardRsi) ? Signal.BUY : Signal.NO_ACTION;
+    return (rsi <= 35) ? Signal.BUY : Signal.NO_ACTION;
   }
 
   /**
@@ -98,7 +95,7 @@ public class ScalpingStrategy {
       double rsi = upbitService.calculateRelativeStrengthIndex(market, 14);
 
       // 손절목표 금액에 도달한경우 손절 신호 발생
-      if (rsi >= 65 && profitRate < -2) {
+      if (rsi >= 75 && profitRate < -2) {
         return Signal.STOP_LOSS;
       }
 

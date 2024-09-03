@@ -64,11 +64,6 @@ public class UpbitScheduler {
    */
   @Scheduled(cron = "0 * * * * *")
   public void runStrategy() {
-    // 인덱스 지수 확인 후 스케줄러 실행 여부 결정
-    if (AppConfig.holdTrade) {
-      return;
-    }
-
     // 스케줄러 실행전 미체결된 매도 주문 취소 접수
     List<CancelOrderResponseDto> cancelSellOrders = upbitService.beforeTaskExecution();
     if (!cancelSellOrders.isEmpty()) {
@@ -77,9 +72,13 @@ public class UpbitScheduler {
     }
     TimeUtility.sleep(1);
 
-    // 매수 프로세스 실행
-    runBuy();
-    TimeUtility.sleep(1);
+    if (AppConfig.holdTrade) {
+      return;
+    } else {
+      // 매수 프로세스 실행
+      runBuy();
+      TimeUtility.sleep(1);
+    }
 
     // 매도 프로세스 실행
     runSell();
