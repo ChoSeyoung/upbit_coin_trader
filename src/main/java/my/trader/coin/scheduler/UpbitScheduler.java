@@ -72,13 +72,9 @@ public class UpbitScheduler {
     }
     TimeUtility.sleep(1);
 
-    if (AppConfig.holdTrade) {
-      return;
-    } else {
-      // 매수 프로세스 실행
-      runBuy();
-      TimeUtility.sleep(1);
-    }
+    // 매수 프로세스 실행
+    runBuy();
+    TimeUtility.sleep(1);
 
     // 매도 프로세스 실행
     runSell();
