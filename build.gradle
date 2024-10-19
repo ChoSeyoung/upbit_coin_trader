@@ -39,8 +39,6 @@ dependencies {
     implementation 'com.auth0:java-jwt:4.2.1'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'org.apache.commons:commons-math3:3.6.1'
-    implementation 'org.seleniumhq.selenium:selenium-java:4.10.0'
-    implementation 'io.github.bonigarcia:webdrivermanager:5.4.2'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.2'
 
     // logging
@@ -51,9 +49,6 @@ dependencies {
     implementation 'org.springframework:spring-webflux:6.0.11'
     implementation 'io.projectreactor:reactor-core:3.5.9'
     implementation 'io.projectreactor.netty:reactor-netty:1.1.7'
-
-    // runtime
-    runtimeOnly 'mysql:mysql-connector-java:8.0.33'
 
     // compile
     compileOnly 'org.projectlombok:lombok:1.18.28'
@@ -67,4 +62,8 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+jar {
+    enabled = true
 }

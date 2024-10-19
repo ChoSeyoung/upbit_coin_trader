@@ -11,9 +11,6 @@
 ## 사전 요구 사항
 - Java Development Kit 22 이상
 - Gradle (IntelliJ 를 사용하고 있다면 설치할 필요 없습니다)
-- chromedriver (brew 로 설치)
-  - ubmi 지수를 받아오기 위해 설치합니다.
-  - 해당 패키지를 설치하기 부담스러우신 분들은 fetchUpbitMarketIndexRatio 메소드를 적절히 수정하시기 바랍니다.
 - 업비트 원화 계좌에 300만원 정도 필요.
   - 개인 경험을 바탕으로 필요 금액을 고지하였습니다.
   - 폭락장이 이어질 경우 추가 금액이 필요할 수 있습니다.

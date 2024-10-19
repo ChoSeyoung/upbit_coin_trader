@@ -12,7 +12,6 @@ import my.trader.coin.service.UpbitService;
 import my.trader.coin.strategy.ScalpingStrategy;
 import my.trader.coin.util.MathUtility;
 import my.trader.coin.util.TimeUtility;
-import my.trader.coin.util.WebScraper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,7 +28,6 @@ public class UpbitScheduler {
 
   private final UpbitService upbitService;
   private final ScalpingStrategy scalpingStrategy;
-  private final WebScraper webScraper;
 
   // 콘솔 데이터 출력용 formatter
   DecimalFormat df = new DecimalFormat("#,##0.00");
@@ -42,21 +40,10 @@ public class UpbitScheduler {
    */
   public UpbitScheduler(
         UpbitService upbitService,
-        ScalpingStrategy scalpingStrategy,
-        WebScraper webScraper
+        ScalpingStrategy scalpingStrategy
   ) {
     this.upbitService = upbitService;
     this.scalpingStrategy = scalpingStrategy;
-    this.webScraper = webScraper;
-  }
-
-  /**
-   * UBMI 지수 스크래핑.
-   * 현재 업비트 제공하지 않음
-   */
-  @Scheduled(cron = "0 * * * * *")
-  public void updateUpbitMarketIndexRatio() {
-    webScraper.fetchUpbitMarketIndexRatio();
   }
 
   /**
@@ -129,7 +116,6 @@ public class UpbitScheduler {
         TimeUtility.sleep(1);
       }
     }
-    webScraper.fetchHighMarketCapitalization();
     upbitService.addScheduledMarket();
   }
 
@@ -206,7 +192,6 @@ public class UpbitScheduler {
         TimeUtility.sleep(1);
       }
     }
-    webScraper.fetchHighMarketCapitalization();
     upbitService.addScheduledMarket();
   }
 }
