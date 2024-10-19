@@ -9,7 +9,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,14 +17,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuthorizationGenerator {
   private static final Logger logger = LoggerFactory.getLogger(AuthorizationGenerator.class);
-
-  // API KEY
-  @Value("${upbit.access.key}")
-  private String accessKey;
-
-  // API SECRET KEY
-  @Value("${upbit.secret.key}")
-  private String secretKey;
 
   /**
    * 파라미터가 없을 경우 Authorization 값 조회.
