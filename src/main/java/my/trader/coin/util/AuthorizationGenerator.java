@@ -24,10 +24,10 @@ public class AuthorizationGenerator {
    * @return Bearer ${Authorization}
    */
   public String generateTokenWithoutParameter() {
-    Algorithm algorithm = Algorithm.HMAC256(System.getenv("UPBIT_SECRET_KEY"));
+    Algorithm algorithm = Algorithm.HMAC256(System.getProperty("secret"));
 
     String jwtToken = JWT.create()
-          .withClaim("access_key", System.getenv("UPBIT_ACCESS_KEY"))
+          .withClaim("access_key", System.getProperty("access"))
           .withClaim("nonce", UUID.randomUUID().toString())
           .sign(algorithm);
 
@@ -51,9 +51,9 @@ public class AuthorizationGenerator {
       byte[] digest = md.digest();
       String queryHash = String.format("%0128x", new BigInteger(1, digest));
 
-      Algorithm algorithm = Algorithm.HMAC256(System.getenv("UPBIT_SECRET_KEY"));
+      Algorithm algorithm = Algorithm.HMAC256(System.getProperty("secret"));
       jwtToken = JWT.create()
-            .withClaim("access_key", System.getenv("UPBIT_ACCESS_KEY"))
+            .withClaim("access_key", System.getProperty("access"))
             .withClaim("nonce", UUID.randomUUID().toString())
             .withClaim("query_hash", queryHash)
             .withClaim("query_hash_alg", "SHA512")

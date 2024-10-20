@@ -3,10 +3,6 @@
 ## (참고) 개발자 개발 환경
 - MacBook Pro 16" Apple M3 Pro 36GB SONOMA
 - IntelliJ
-- CheckStyle-IDEA Plugin (Google Check)
-  - IDEA 종속된 플러그인을 사용합니다만, 타 IDEA 에서 PR 생성 후 요청주시면 코드 검토 후 승인하겠습니다.
-  - 해당 플러그인 관련된 설정은 config/checkstyle.xml 파일로 설정합니다.
-  - Setting > Code Editor > Code Style > Java > 설정 아이콘 > import Scheme > 파일선택 과정으로 적용할 수 있습니다.
 
 ## 사전 요구 사항
 - Java Development Kit 22 이상
@@ -32,15 +28,6 @@ cd upbit_coin_trader
 cp src/main/resources/application.properties.example src/main/resources/application.properties
 ```
 
-### 3. API 키 구성 및 필수값 설정
-```sh
-# src/main/resources/application.properties
-
-# 업비트 API KEY 를 확인하세요
-upbit.api.key=${your_api_key_here}
-# 업비트 SECRET KEY 를 확인하세요
-upbit.secret.key=${your_secret_key_here}
-```
 ---
 
 # 기여 가이드

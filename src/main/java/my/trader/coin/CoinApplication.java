@@ -23,8 +23,6 @@ public class CoinApplication {
   }
 
   public static void main(String[] args) {
-    System.out.println(System.getenv("UPBIT_ACCESS_KEY"));
-    System.out.println(System.getenv("UPBIT_SECRET_KEY"));
     SpringApplication.run(CoinApplication.class, args);
   }
 
