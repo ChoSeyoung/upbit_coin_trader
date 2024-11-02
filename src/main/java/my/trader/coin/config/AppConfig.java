@@ -24,12 +24,12 @@ public class AppConfig {
 
   static {
     upbitMarketIndexRatio = 0.0;
-    scheduledMarket = new ArrayList<>(Arrays.asList("KRW-BTC", "KRW-XRP", "KRW-ETH"));
+    scheduledMarket = new ArrayList<>(Arrays.asList("KRW-BTC"));
     holdTrade = true;
 
     wholeSellWhenProfit = true;
     exchangeFeeRatio = 1.0005;
-    minOrderAmount = 5100;
+    minOrderAmount = 20000;
     minBuyAmount = 20000;
     minSellAmount = 20000;
     takeProfitPercentage = 0.5;

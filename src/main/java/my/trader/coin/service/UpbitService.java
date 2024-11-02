@@ -299,7 +299,7 @@ public class UpbitService {
           .map(account -> account.getUnitCurrency() + "-" + account.getCurrency())
           .toList();
 
-    List<String> defaultMarkets = List.of("KRW-BTC", "KRW-ETH", "KRW-XRP");
+    List<String> defaultMarkets = List.of("KRW-BTC");
 
     // 중복 제거 및 리스트 통합
     Set<String> set = new HashSet<>();

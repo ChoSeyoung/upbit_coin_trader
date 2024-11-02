@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 public class UpbitScheduler {
   private static final Logger logger = LoggerFactory.getLogger(UpbitScheduler.class);
 
+  private Long lastBuyTime = null;
   private int schedulerExecutedCount = 0;
 
   private final UpbitService upbitService;
@@ -97,19 +98,25 @@ public class UpbitScheduler {
 
         // 매수 시그널 확인
         if (buySignal.isBuySignal()) {
-          // 주문 수량 계산
-          Double quantity =
-                MathUtility.calculateMinimumOrderQuantity(minimumOrderAmount, currentPrice);
+          long currentTime = System.currentTimeMillis();
 
-          OrderResponseDto result =
-                upbitService.executeOrder(market, currentPrice, quantity,
-                      UpbitType.ORDER_SIDE_BID.getType());
+          // 마지막 매수 시점으로부터 1분이 경과했는지 확인
+          if (lastBuyTime == null || (currentTime - lastBuyTime >= 60000)) {
+            Double quantity = MathUtility.calculateMinimumOrderQuantity(minimumOrderAmount, currentPrice);
+            OrderResponseDto result = upbitService.executeOrder(market, currentPrice, quantity,
+                  UpbitType.ORDER_SIDE_BID.getType());
 
-          // 매수 주문 실행 성공 후 처리 프로세스
-          if (result != null) {
+            if (result != null) {
+              ColorfulConsoleOutput.printWithColor(
+                    String.format("[%s] 매수 주문 발생: %s", market, df.format(currentPrice)),
+                    ColorfulConsoleOutput.RED
+              );
+              lastBuyTime = currentTime; // 매수 후 최근 매수 시간 업데이트
+            }
+          } else {
             ColorfulConsoleOutput.printWithColor(
-                  String.format("[%s] 매수 주문 발생: %s", market, df.format(currentPrice)),
-                  ColorfulConsoleOutput.RED
+                  String.format("[%s] 매수 대기 중: 1분 이내에 추가 매수 금지", market),
+                  ColorfulConsoleOutput.YELLOW
             );
           }
         }
