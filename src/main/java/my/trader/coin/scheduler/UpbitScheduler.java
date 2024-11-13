@@ -100,8 +100,8 @@ public class UpbitScheduler {
         if (buySignal.isBuySignal()) {
           long currentTime = System.currentTimeMillis();
 
-          // 마지막 매수 시점으로부터 1분이 경과했는지 확인
-          if (lastBuyTime == null || (currentTime - lastBuyTime >= 60000)) {
+          // 마지막 매수 시점으로부터 5분이 경과했는지 확인
+          if (lastBuyTime == null || (currentTime - lastBuyTime >= 300000)) {
             Double quantity = MathUtility.calculateMinimumOrderQuantity(minimumOrderAmount, currentPrice);
             OrderResponseDto result = upbitService.executeOrder(market, currentPrice, quantity,
                   UpbitType.ORDER_SIDE_BID.getType());

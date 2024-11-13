@@ -44,7 +44,7 @@ public class ScalpingStrategy {
    * 매도 의사결정.
    *
    * @param market             마켓코드
-   * @param currentPrice       매도가
+   * @param currentPrice       현재가
    * @return 매도 결정시 true
    */
   public Signal shouldSell(String market, Double currentPrice) {
@@ -72,13 +72,8 @@ public class ScalpingStrategy {
         return Signal.NO_ACTION;
       }
 
-      // 익절 목표 퍼센티지 조회
-      double targetProfit;
-      if (buyAmount > 100000) {
-        targetProfit = AppConfig.takeProfitPercentage * 0.6;
-      } else {
-        targetProfit = AppConfig.takeProfitPercentage;
-      }
+      // 익절 목표 퍼센티지 설정
+      double targetProfit = AppConfig.takeProfitPercentage;
 
       // 거래소 수수료
       double exchangeFeeRatio = AppConfig.exchangeFeeRatio;

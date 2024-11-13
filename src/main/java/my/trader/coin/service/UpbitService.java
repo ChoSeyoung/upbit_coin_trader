@@ -14,17 +14,32 @@ import my.trader.coin.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
+/**
+ * UpbitService 클래스는 Upbit 거래소와의 통신을 통해 다양한 거래 데이터를 가져오고,
+ * 주문 실행 및 취소 등의 거래 관련 기능을 제공합니다.
+ */
 @Service
 public class UpbitService {
   private final AuthorizationGenerator authorizationGenerator;
   private final ExternalUtility externalUtility;
 
+  /**
+   * UpbitService 생성자
+   *
+   * @param authorizationGenerator 인증 토큰 생성기
+   * @param externalUtility        외부 유틸리티 서비스
+   */
   public UpbitService(AuthorizationGenerator authorizationGenerator,
                       ExternalUtility externalUtility) {
     this.authorizationGenerator = authorizationGenerator;
     this.externalUtility = externalUtility;
   }
 
+  /**
+   * 지원하는 시장 정보를 조회합니다.
+   *
+   * @return 지원하는 시장 정보의 리스트
+   */
   public List<MarketResponseDto> getMarket() {
     MarketRequestDto marketRequestDto = MarketRequestDto.builder().isDetail(true).build();
 
@@ -36,6 +51,11 @@ public class UpbitService {
     return externalUtility.getWithoutAuth(uri, MarketResponseDto.class);
   }
 
+  /**
+   * 계좌 정보를 조회합니다.
+   *
+   * @return 사용자의 계좌 정보 리스트
+   */
   public List<AccountResponseDto> getAccount() {
     URI uri = UriComponentsBuilder.fromHttpUrl(UpbitApi.GET_ACCOUNT.getUrl()).build().toUri();
 
@@ -44,6 +64,12 @@ public class UpbitService {
     return externalUtility.getWithAuth(uri, AccountResponseDto.class, authorizationToken);
   }
 
+  /**
+   * 지정된 시장의 현재 가격 정보를 조회합니다.
+   *
+   * @param markets 조회할 시장의 리스트
+   * @return 각 시장의 현재 가격 정보 리스트
+   */
   public List<TickerResponseDto> getTicker(List<String> markets) {
     TickerRequestDto tickerRequestDto = TickerRequestDto.builder()
           .markets(String.join(",", markets))
@@ -57,6 +83,15 @@ public class UpbitService {
     return externalUtility.getWithoutAuth(uri, TickerResponseDto.class);
   }
 
+  /**
+   * 지정한 조건에 따라 주문을 실행합니다.
+   *
+   * @param tickerSymbol 거래할 종목 코드
+   * @param price        주문 가격
+   * @param quantity     주문 수량
+   * @param side         매수 또는 매도 방향
+   * @return 주문 실행 결과
+   */
   public OrderResponseDto executeOrder(String tickerSymbol, double price, double quantity,
                                        String side) {
     OrderRequestDto orderRequestDto = OrderRequestDto.builder()
@@ -78,6 +113,15 @@ public class UpbitService {
           authorizationToken);
   }
 
+  /**
+   * 지정된 분 단위로 캔들 데이터를 조회합니다.
+   *
+   * @param market  시장 코드
+   * @param unit    캔들 단위 (분 단위)
+   * @param count   조회할 캔들 개수
+   * @param orderBy 정렬 순서 ("asc" 또는 "desc")
+   * @return 분 캔들 데이터 리스트
+   */
   public List<CandleResponseDto> getMinuteCandle(String market, Unit unit, int count,
                                                  String orderBy) {
     int minCandleSize = Integer.parseInt(UpbitType.MIN_CANDLE_SIZE.getType());
@@ -109,6 +153,12 @@ public class UpbitService {
     return candleResponseDtos;
   }
 
+  /**
+   * 지정된 시장에서 미체결 주문 목록을 조회합니다.
+   *
+   * @param market 시장 코드
+   * @return 미체결 주문 리스트
+   */
   public List<OpenOrderResponseDto> getOpenOrders(String market) {
     OpenOrderRequestDto openOrderRequestDto = OpenOrderRequestDto.builder()
           .market(market).build();
@@ -125,6 +175,12 @@ public class UpbitService {
     return externalUtility.getWithAuth(uri, OpenOrderResponseDto.class, authorizationToken);
   }
 
+  /**
+   * 특정 주문을 취소합니다.
+   *
+   * @param uuid 주문의 UUID
+   * @return 주문 취소 결과
+   */
   public CancelOrderResponseDto cancelOrder(String uuid) {
     CancelOrderRequestDto cancelOrderRequestDto = CancelOrderRequestDto.builder()
           .uuid(uuid)
@@ -143,6 +199,11 @@ public class UpbitService {
           authorizationToken);
   }
 
+  /**
+   * 작업 수행 전 미체결 주문을 취소합니다.
+   *
+   * @return 취소된 주문 리스트
+   */
   public List<CancelOrderResponseDto> beforeTaskExecution() {
     List<CancelOrderResponseDto> results = new ArrayList<>();
 
@@ -178,6 +239,11 @@ public class UpbitService {
     return results;
   }
 
+  /**
+   * 작업 완료 후 매수 미체결 주문을 취소합니다.
+   *
+   * @return 취소된 주문 리스트
+   */
   public List<CancelOrderResponseDto> afterTaskCompletion() {
     List<CancelOrderResponseDto> results = new ArrayList<>();
 
@@ -217,11 +283,11 @@ public class UpbitService {
   }
 
   /**
-   * 지수 이동 평균 데이터를 기준으로 RSI 지표 조회.
+   * RSI 지표를 계산하여 반환합니다.
    *
-   * @param market 마켓코드
-   * @param weight 가중치
-   * @return RSI
+   * @param market 마켓 코드
+   * @param weight RSI 지표 계산을 위한 가중치
+   * @return RSI 지표 값
    */
   public Double calculateRelativeStrengthIndex(String market, int weight) {
     int maxCandleSize = Integer.parseInt(UpbitType.MAX_CANDLE_SIZE.getType());
@@ -266,55 +332,7 @@ public class UpbitService {
   }
 
   /**
-   * 종목 선정.
-   */
-  public void selectScheduledMarket() {
-    List<MarketResponseDto> marketResponses = getMarket();
-
-    List<String> markets = marketResponses.stream()
-          .map(MarketResponseDto::getMarket)
-          .toList();
-
-    List<TickerResponseDto> tickers = getTicker(markets);
-
-    // 현재 상승중인 종목 & 24시간 누적 거래액이 1000억 이상 & 변화율이 5% 이상 => 변화율 기준 내림차순 정렬
-    List<TickerResponseDto> analyzedTickers = tickers.stream()
-          .filter(ticker -> ticker.getChange().equals(UpbitType.TICKER_CHANGE_RISE.getType()))
-          .filter(ticker -> ticker.getAccTradePrice24h().compareTo(
-                BigDecimal.valueOf(30_000_000_000L)) > 0)
-          .filter(ticker -> ticker.getChangeRate() > 0)
-          .sorted(Comparator.comparing(TickerResponseDto::getSignedChangeRate).reversed())
-          .toList();
-
-    // filtered 된 데이터에서 market 필드 값만 추출하여 콤마로 구분된 문자열 생성
-    List<String> popularMarkets = analyzedTickers.stream()
-          .map(TickerResponseDto::getMarket)
-          .filter(market -> market.startsWith("KRW"))
-          .toList();
-
-    // 보유 종목 조회
-    List<AccountResponseDto> accounts = this.getAccount();
-    List<String> holdingMarkets = accounts.stream()
-          .filter(account -> !"KRW".equals(account.getCurrency()))
-          .map(account -> account.getUnitCurrency() + "-" + account.getCurrency())
-          .toList();
-
-    List<String> defaultMarkets = List.of("KRW-BTC");
-
-    // 중복 제거 및 리스트 통합
-    Set<String> set = new HashSet<>();
-    set.addAll(popularMarkets);
-    set.addAll(holdingMarkets);
-    set.addAll(defaultMarkets);
-
-    AppConfig.setScheduledMarket(new ArrayList<>(set));
-
-    ColorfulConsoleOutput.printWithColor("종목 업데이트 완료: " + AppConfig.scheduledMarket,
-          ColorfulConsoleOutput.GREEN);
-  }
-
-  /**
-   * 기종목에 보유 종목 추가.
+   * 보유 종목을 스케줄링된 시장에 추가합니다.
    */
   public void addScheduledMarket() {
     List<AccountResponseDto> accounts = this.getAccount();
