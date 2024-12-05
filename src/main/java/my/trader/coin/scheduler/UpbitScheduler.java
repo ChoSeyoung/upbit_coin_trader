@@ -115,7 +115,7 @@ public class UpbitScheduler {
             }
           } else {
             ColorfulConsoleOutput.printWithColor(
-                  String.format("[%s] 매수 대기 중: 1분 이내에 추가 매수 금지", market),
+                  String.format("[%s] 매수 대기 중: 5분 이내에 추가 매수 금지", market),
                   ColorfulConsoleOutput.YELLOW
             );
           }

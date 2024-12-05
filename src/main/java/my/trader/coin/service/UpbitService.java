@@ -71,6 +71,10 @@ public class UpbitService {
    * @return 각 시장의 현재 가격 정보 리스트
    */
   public List<TickerResponseDto> getTicker(List<String> markets) {
+    if (markets == null || markets.isEmpty()) {
+      return Collections.emptyList();
+    }
+
     TickerRequestDto tickerRequestDto = TickerRequestDto.builder()
           .markets(String.join(",", markets))
           .build();
