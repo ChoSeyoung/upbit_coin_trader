@@ -22,10 +22,13 @@ git clone https://github.com/ChoSeyoung/upbit_coin_trader.git
 cd upbit_coin_trader
 ```
 
-### 2. application.properties.example을 application.properties로 복사
-
+### 2. 개인 환경 변수 값 설정
+프로그램 동작에 필요한 key 는 업비트에서 확인해주세요.
 ```sh
-cp src/main/resources/application.properties.example src/main/resources/application.properties
+vi .zshrc
+
+UPBIT_ACCESS_KEY=${발급받은키}
+UPBIT_SECRET_KEY=${발급받은키}
 ```
 
 ---
@@ -57,7 +60,7 @@ UBMI 및 RSI 를 추종하여 UBMI 가 0% 이하이면서 RSI 가 30 이하인 �
 매수 진행시 업비트 최저 주문금액을 기준으로 분할 매수 합니다.
 
 ## 매도 전략
-현재 수익률이 0.2~0.3%(익절) 인 종목.
+현재 수익률이 0.5%(익절) 인 종목.
 
 현재수익률이 -2% 이하이면서 RSI 가 70 이상인(손절) 종목.
 
