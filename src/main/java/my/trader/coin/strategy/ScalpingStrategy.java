@@ -32,12 +32,13 @@ public class ScalpingStrategy {
           ColorfulConsoleOutput.RED);
 
     double rsi = upbitService.calculateRelativeStrengthIndex(market, 14);
+    double adx = upbitService.calculateAverageDirectionalMovementIndex(market, 14);
 
-    // RSI 로깅
-    ColorfulConsoleOutput.printWithColor(String.format("RSI: %s", rsi),
+    // RSI & ADX 로깅
+    ColorfulConsoleOutput.printWithColor(String.format("RSI: %s, ADX: %s", rsi, adx),
           ColorfulConsoleOutput.RED);
 
-    return (rsi <= 35) ? Signal.BUY : Signal.NO_ACTION;
+    return (rsi <= 35 && adx >= 20) ? Signal.BUY : Signal.NO_ACTION;
   }
 
   /**

@@ -47,4 +47,20 @@ public class MathUtility {
 
     return result;
   }
+
+  /**
+   * 배열의 특정 구간 합을 계산합니다.
+   *
+   * @param array 합을 계산할 배열
+   * @param start 시작 인덱스 (포함)
+   * @param end 끝 인덱스 (포함하지 않음)
+   * @return 배열의 구간 합
+   */
+  public static double calculateSumInRange(double[] array, int start, int end) {
+    double total = 0;
+    for (int i = start; i < end; i++) {
+      total += array[i];
+    }
+    return total;
+  }
 }

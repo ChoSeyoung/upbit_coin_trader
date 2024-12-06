@@ -14,6 +14,8 @@ import my.trader.coin.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import static my.trader.coin.util.MathUtility.calculateSumInRange;
+
 /**
  * UpbitService 클래스는 Upbit 거래소와의 통신을 통해 다양한 거래 데이터를 가져오고,
  * 주문 실행 및 취소 등의 거래 관련 기능을 제공합니다.
@@ -333,6 +335,85 @@ public class UpbitService {
     double ad = MathUtility.calculateExponentialMovingAverage(down, weight);
 
     return 100 - (100 / (1 + (au / ad)));
+  }
+
+  /**
+   * ADX 지표를 계산하여 반환합니다.
+   *
+   * @param market 마켓 코드
+   * @param weight ADX 지표 계산을 위한 가중치
+   * @return ADX 지표 값
+   */
+  public double calculateAverageDirectionalMovementIndex(String market, int weight) {
+    int maxCandleSize = Integer.parseInt(UpbitType.MAX_CANDLE_SIZE.getType());
+
+    // timestamp 기준 오름차순 정렬된 지수 이동 평균 데이터 조회
+    List<CandleResponseDto> candles =
+            getMinuteCandle(market, Unit.UNIT_1, maxCandleSize, "asc");
+    // 마지막 데이터는 현재 분에 해당하는 캔들이므로 제거
+    candles.removeLast();
+
+    int size = candles.size();
+    if (size < weight * 2) {
+      throw new IllegalArgumentException("캔들 데이터가 부족합니다.");
+    }
+
+    double[] tr = new double[size];
+    double[] plusDM = new double[size];
+    double[] minusDM = new double[size];
+    double[] smoothedTR = new double[size];
+    double[] smoothedPlusDM = new double[size];
+    double[] smoothedMinusDM = new double[size];
+    double[] plusDI = new double[size];
+    double[] minusDI = new double[size];
+    double[] dx = new double[size];
+    double[] adx = new double[size];
+
+    // 1. True Range (TR), +DM, -DM 계산
+    for (int i = 1; i < size; i++) {
+      CandleResponseDto prev = candles.get(i - 1);
+      CandleResponseDto current = candles.get(i);
+
+      double highDiff = current.getHighPrice() - prev.getHighPrice();
+      double lowDiff = prev.getLowPrice() - current.getLowPrice();
+
+      tr[i] = Math.max(
+              current.getHighPrice() - current.getLowPrice(),
+              Math.max(Math.abs(current.getHighPrice() - prev.getTradePrice()), Math.abs(current.getLowPrice() - prev.getTradePrice()))
+      );
+
+      plusDM[i] = (highDiff > lowDiff && highDiff > 0) ? highDiff : 0;
+      minusDM[i] = (lowDiff > highDiff && lowDiff > 0) ? lowDiff : 0;
+    }
+
+    // 2. 초기 Smoothed TR, +DM, -DM
+    smoothedTR[weight - 1] = calculateSumInRange(tr, 1, weight);
+    smoothedPlusDM[weight - 1] = calculateSumInRange(plusDM, 1, weight);
+    smoothedMinusDM[weight - 1] = calculateSumInRange(minusDM, 1, weight);
+
+    // 3. Smooth TR, +DM, -DM
+    for (int i = weight; i < size; i++) {
+      smoothedTR[i] = smoothedTR[i - 1] - (smoothedTR[i - 1] / weight) + tr[i];
+      smoothedPlusDM[i] = smoothedPlusDM[i - 1] - (smoothedPlusDM[i - 1] / weight) + plusDM[i];
+      smoothedMinusDM[i] = smoothedMinusDM[i - 1] - (smoothedMinusDM[i - 1] / weight) + minusDM[i];
+
+      // +DI, -DI 계산
+      plusDI[i] = (smoothedPlusDM[i] / smoothedTR[i]) * 100;
+      minusDI[i] = (smoothedMinusDM[i] / smoothedTR[i]) * 100;
+
+      // DX 계산
+      dx[i] = (Math.abs(plusDI[i] - minusDI[i]) / (plusDI[i] + minusDI[i])) * 100;
+    }
+
+    // 4. ADX 계산
+    adx[weight * 2 - 1] = calculateSumInRange(dx, weight, weight * 2) / weight;
+
+    for (int i = weight * 2; i < size; i++) {
+      adx[i] = ((adx[i - 1] * (weight - 1)) + dx[i]) / weight;
+    }
+
+    // 5. ADX 결과 반환
+    return adx[adx.length - 1];
   }
 
   /**
