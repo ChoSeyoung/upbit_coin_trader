@@ -11,25 +11,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class MathUtility {
   /**
-   * 주어진 x 값을 곱하여 min 을 초과하도록 하는 횟수를 구하는 메서드.
-   *
-   * @param min 최소값 (ex. 최소주문금액)
-   * @param x   기준값 (ex. 1주당 주문금액)
-   * @return 횟수
-   */
-  public static int calculateMultiplicationCount(double min, double x) {
-    int count = 0;
-    double result = x;
-
-    while (result <= min) {
-      result *= x;
-      count++;
-    }
-
-    return count;
-  }
-
-  /**
    * 소수점 8자리까지 계산하고 그 뒤는 절사하며, 소수점 8자리에서 무조건 올림 처리합니다.
    *
    * @param minimumOrderAmount 최소 주문금액
@@ -39,38 +20,6 @@ public class MathUtility {
   public static Double calculateMinimumOrderQuantity(Double minimumOrderAmount,
                                                      Double currentPrice) {
     return minimumOrderAmount / currentPrice;
-  }
-
-  /**
-   * RSI 계산
-   *
-   * @param prices 가격 모음집
-   * @param period 기간
-   * @return RSI
-   */
-  public static double calculateRsi(List<Double> prices, int period) {
-    if (prices.size() < period + 1) {
-      throw new IllegalArgumentException("Not enough data points to calculate RSI");
-    }
-
-    double[] gains = new double[period];
-    double[] losses = new double[period];
-
-    for (int i = 1; i <= period; i++) {
-      double change = prices.get(i - 1) - prices.get(i);
-      if (change > 0) {
-        gains[i - 1] = change;
-      } else {
-        losses[i - 1] = -change;
-      }
-    }
-
-    Mean mean = new Mean();
-    double averageGain = mean.evaluate(gains);
-    double averageLoss = mean.evaluate(losses);
-
-    double rs = averageGain / averageLoss;
-    return 100 - (100 / (1 + rs));
   }
 
   /**
@@ -88,7 +37,7 @@ public class MathUtility {
 
     double result = 0;
     if (!data.isEmpty()) {
-      result = data.get(0);
+      result = data.getFirst();
       if (data.size() > 1) {
         for (int i = 1; i < data.size(); i++) {
           result = (data.get(i) * formula) + (result * (1 - formula));
