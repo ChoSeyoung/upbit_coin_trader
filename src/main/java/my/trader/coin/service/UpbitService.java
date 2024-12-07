@@ -300,7 +300,7 @@ public class UpbitService {
     List<CandleResponseDto> candles =
           getMinuteCandle(market, Unit.UNIT_1, maxCandleSize, "asc");
     // 마지막 데이터는 현재 분에 해당하는 캔들이므로 제거
-    candles.removeLast();
+    candles.remove(candles.size() - 1);
 
     // 상승 데이터
     List<Double> up = new ArrayList<>();

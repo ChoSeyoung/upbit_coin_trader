@@ -37,7 +37,7 @@ public class MathUtility {
 
     double result = 0;
     if (!data.isEmpty()) {
-      result = data.getFirst();
+      result = data.get(0);
       if (data.size() > 1) {
         for (int i = 1; i < data.size(); i++) {
           result = (data.get(i) * formula) + (result * (1 - formula));
