@@ -22,6 +22,7 @@ public class AppConfig {
   public static boolean holdTrade;
 
   public static boolean wholeSellWhenProfit;
+  public static boolean includeTopTradingStocks;
   public static double exchangeFeeRatio;
   public static double minOrderAmount;
   public static double minBuyAmount;
@@ -36,6 +37,7 @@ public class AppConfig {
     holdTrade = true;
 
     wholeSellWhenProfit = true;
+    includeTopTradingStocks = true;
     exchangeFeeRatio = 1.0005;
     minOrderAmount = 20000;
     minBuyAmount = 20000;
