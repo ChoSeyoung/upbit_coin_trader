@@ -163,7 +163,15 @@ public class UpbitScheduler {
             // 전량 매도 플래그 활성화시 익절 시그널 발생되면 전량 매도
             if (sellSignal.equals(Signal.TAKE_PROFIT)) {
               if (AppConfig.wholeSellWhenProfit) {
+                // 전량 매도
                 quantity = inventory;
+              } else {
+                // 분할 매도
+                if (inventory * quantity < minimumOrderAmount) {
+                  quantity = inventory;
+                } else {
+                  quantity = inventory / 2;
+                }
               }
             }
 
@@ -185,7 +193,7 @@ public class UpbitScheduler {
             }
           }
         }
-        TimeUtility.sleep(1);
+        TimeUtility.sleep(0.5);
       }
     }
     upbitService.addScheduledMarket();
