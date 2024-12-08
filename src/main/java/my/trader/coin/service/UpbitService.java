@@ -289,19 +289,11 @@ public class UpbitService {
   /**
    * RSI 지표를 계산하여 반환합니다.
    *
-   * @param market 마켓 코드
+   * @param candles 캔들 리스트
    * @param weight RSI 지표 계산을 위한 가중치
    * @return RSI 지표 값
    */
-  public Double calculateRelativeStrengthIndex(String market, int weight) {
-    int maxCandleSize = Integer.parseInt(UpbitType.MAX_CANDLE_SIZE.getType());
-
-    // timestamp 기준 오름차순 정렬된 지수 이동 평균 데이터 조회
-    List<CandleResponseDto> candles =
-          getMinuteCandle(market, Unit.UNIT_1, maxCandleSize, "asc");
-    // 마지막 데이터는 현재 분에 해당하는 캔들이므로 제거
-    candles.remove(candles.size() - 1);
-
+  public Double calculateRelativeStrengthIndex(List<CandleResponseDto> candles, int weight) {
     // 상승 데이터
     List<Double> up = new ArrayList<>();
     // 하락 데이터
@@ -338,19 +330,11 @@ public class UpbitService {
   /**
    * ADX 지표를 계산하여 반환합니다.
    *
-   * @param market 마켓 코드
+   * @param candles 캔들 리스트
    * @param weight ADX 지표 계산을 위한 가중치
    * @return ADX 지표 값
    */
-  public double calculateAverageDirectionalMovementIndex(String market, int weight) {
-    int maxCandleSize = Integer.parseInt(UpbitType.MAX_CANDLE_SIZE.getType());
-
-    // timestamp 기준 오름차순 정렬된 지수 이동 평균 데이터 조회
-    List<CandleResponseDto> candles =
-          getMinuteCandle(market, Unit.UNIT_1, maxCandleSize, "asc");
-    // 마지막 데이터는 현재 분에 해당하는 캔들이므로 제거
-    candles.remove(candles.size() - 1);
-
+  public double calculateAverageDirectionalMovementIndex(List<CandleResponseDto> candles, int weight) {
     int size = candles.size();
     if (size < weight * 2) {
       throw new IllegalArgumentException("캔들 데이터가 부족합니다.");
@@ -433,7 +417,7 @@ public class UpbitService {
       topTradingMarkets = tickers.stream()
             .filter(ticker -> ticker.getChangeRate() <= 0.05)
             .sorted(Comparator.comparing(TickerResponseDto::getAccTradePrice24h).reversed())
-            .limit(10)
+            .limit(30)
             .map(TickerResponseDto::getMarket)
             .toList();
     }

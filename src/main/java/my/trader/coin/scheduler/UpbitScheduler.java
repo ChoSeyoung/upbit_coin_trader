@@ -24,7 +24,6 @@ import org.springframework.stereotype.Component;
 public class UpbitScheduler {
   private static final Logger logger = LoggerFactory.getLogger(UpbitScheduler.class);
 
-  private Long lastBuyTime = null;
   private int schedulerExecutedCount = 0;
 
   private final UpbitService upbitService;
@@ -58,15 +57,15 @@ public class UpbitScheduler {
       ColorfulConsoleOutput.printWithColor("매수/매도 주문 잔여 수량 취소 작업 진행 완료",
             ColorfulConsoleOutput.GREEN);
     }
-    TimeUtility.sleep(1);
+    TimeUtility.sleep(0.5);
 
     // 매수 프로세스 실행
     runBuy();
-    TimeUtility.sleep(1);
+    TimeUtility.sleep(0.5);
 
     // 매도 프로세스 실행
     runSell();
-    TimeUtility.sleep(1);
+    TimeUtility.sleep(0.5);
 
     // 완료 로깅
     ColorfulConsoleOutput.printWithColor(++schedulerExecutedCount + " set cleared",
@@ -98,29 +97,19 @@ public class UpbitScheduler {
 
         // 매수 시그널 확인
         if (buySignal.isBuySignal()) {
-          long currentTime = System.currentTimeMillis();
+          Double quantity =
+                MathUtility.calculateMinimumOrderQuantity(minimumOrderAmount, currentPrice);
+          OrderResponseDto result = upbitService.executeOrder(market, currentPrice, quantity,
+                UpbitType.ORDER_SIDE_BID.getType());
 
-          // 마지막 매수 시점으로부터 5분이 경과했는지 확인
-          if (lastBuyTime == null || (currentTime - lastBuyTime >= 300000)) {
-            Double quantity = MathUtility.calculateMinimumOrderQuantity(minimumOrderAmount, currentPrice);
-            OrderResponseDto result = upbitService.executeOrder(market, currentPrice, quantity,
-                  UpbitType.ORDER_SIDE_BID.getType());
-
-            if (result != null) {
-              ColorfulConsoleOutput.printWithColor(
-                    String.format("[%s] 매수 주문 발생: %s", market, df.format(currentPrice)),
-                    ColorfulConsoleOutput.RED
-              );
-              lastBuyTime = currentTime; // 매수 후 최근 매수 시간 업데이트
-            }
-          } else {
+          if (result != null) {
             ColorfulConsoleOutput.printWithColor(
-                  String.format("[%s] 매수 대기 중: 5분 이내에 추가 매수 금지", market),
-                  ColorfulConsoleOutput.YELLOW
+                  String.format("[%s] 매수 주문 발생: %s", market, df.format(currentPrice)),
+                  ColorfulConsoleOutput.RED
             );
           }
         }
-        TimeUtility.sleep(1);
+        TimeUtility.sleep(0.5);
       }
     }
     upbitService.addScheduledMarket();
