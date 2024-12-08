@@ -115,7 +115,7 @@ public class ScalpingStrategy {
       }
 
       // 익절목표 금액에 도달한경우 매도 신호 발생
-      return (profitRate > targetProfit) ? Signal.TAKE_PROFIT : Signal.NO_ACTION;
+      return (profitRate >= targetProfit) ? Signal.TAKE_PROFIT : Signal.NO_ACTION;
     } else {
       ColorfulConsoleOutput.printWithColor("미보유 종목 매도 불가", ColorfulConsoleOutput.BLUE);
     }
