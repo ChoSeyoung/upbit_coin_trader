@@ -24,6 +24,9 @@ import org.springframework.stereotype.Component;
 public class UpbitScheduler {
   private static final Logger logger = LoggerFactory.getLogger(UpbitScheduler.class);
 
+  // market별 마지막 매수 시간을 저장하는 Map
+  private final Map<String, Long> lastBuyTimeMap = new HashMap<>();
+
   private int schedulerExecutedCount = 0;
 
   private final UpbitService upbitService;
@@ -90,6 +93,16 @@ public class UpbitScheduler {
         // 마켓코드(ex: KRW-BTC)
         String market = tickerData.getMarket();
 
+        // 현재 시간
+        long currentTime = System.currentTimeMillis();
+
+        // 마지막 매수 시간 확인
+        Long lastBuyTime = lastBuyTimeMap.get(market);
+        // 2분 이내면 매수를 건너뜀
+        if (lastBuyTime != null && (currentTime - lastBuyTime) < 2 * 60 * 1000) {
+          continue;
+        }
+
         // 매수 시그널 확인
         Signal buySignal = scalpingStrategy.shouldBuy(market);
         // 현재 가격
@@ -103,6 +116,8 @@ public class UpbitScheduler {
                 UpbitType.ORDER_SIDE_BID.getType());
 
           if (result != null) {
+            // 매수 성공 시 마지막 매수 시간 갱신
+            lastBuyTimeMap.put(market, currentTime);
             ColorfulConsoleOutput.printWithColor(
                   String.format("[%s] 매수 주문 발생: %s", market, df.format(currentPrice)),
                   ColorfulConsoleOutput.RED
@@ -165,13 +180,6 @@ public class UpbitScheduler {
               if (AppConfig.wholeSellWhenProfit) {
                 // 전량 매도
                 quantity = inventory;
-              } else {
-                // 분할 매도
-                if (inventory * quantity < minimumOrderAmount) {
-                  quantity = inventory;
-                } else {
-                  quantity = inventory / 2;
-                }
               }
             }
 

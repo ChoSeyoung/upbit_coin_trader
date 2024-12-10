@@ -415,7 +415,7 @@ public class UpbitService {
 
       // 24시간 누적 거래액 상위 10종목
       topTradingMarkets = tickers.stream()
-            .filter(ticker -> ticker.getChangeRate() <= 0.05)
+//            .filter(ticker -> ticker.getChangeRate() <= 0.05)
             .sorted(Comparator.comparing(TickerResponseDto::getAccTradePrice24h).reversed())
             .limit(30)
             .map(TickerResponseDto::getMarket)
