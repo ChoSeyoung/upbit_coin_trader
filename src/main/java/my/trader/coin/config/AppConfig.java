@@ -39,9 +39,9 @@ public class AppConfig {
     wholeSellWhenProfit = true;
     includeTopTradingStocks = true;
     exchangeFeeRatio = 1.0005;
-    minOrderAmount = 10000;
-    minBuyAmount = 20000;
-    minSellAmount = 20000;
+    minOrderAmount = 5001;
+    minBuyAmount = 100000;
+    minSellAmount = 100000;
     takeProfitPercentage = 0.3;
   }
 }

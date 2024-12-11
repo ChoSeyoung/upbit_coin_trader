@@ -52,7 +52,7 @@ public class UpbitScheduler {
   /**
    * 매 분마다 시장 데이터를 가져오고 스캘핑 전략을 실행합니다.
    */
-  @Scheduled(cron = "0 * * * * *")
+  @Scheduled(cron = "0,30 * * * * *")
   public void runStrategy() {
     // 스케줄러 실행전 미체결된 매도 주문 취소 접수
     List<CancelOrderResponseDto> cancelSellOrders = upbitService.beforeTaskExecution();
@@ -135,7 +135,7 @@ public class UpbitScheduler {
    */
   private void runSell() {
     // 주문 수량 계산
-    double minimumOrderAmount = AppConfig.minOrderAmount;
+    double minimumOrderAmount = AppConfig.minSellAmount;
 
     // 계좌 조회
     List<AccountResponseDto> accounts = upbitService.getAccount();
@@ -177,10 +177,12 @@ public class UpbitScheduler {
 
             // 전량 매도 플래그 활성화시 익절 시그널 발생되면 전량 매도
             if (sellSignal.equals(Signal.TAKE_PROFIT)) {
+              // 전량 매도
               if (AppConfig.wholeSellWhenProfit) {
-                // 전량 매도
                 quantity = inventory;
               }
+            } else if (sellSignal.equals(Signal.STOP_LOSS)) {
+              quantity = inventory;
             }
 
             // 매도 신호가 발생하면 매도 로직 실행

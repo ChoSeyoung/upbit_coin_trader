@@ -39,9 +39,6 @@ public class ScalpingStrategy {
           upbitService.getMinuteCandle(market, Unit.UNIT_1,
                 Integer.parseInt(UpbitType.MAX_CANDLE_SIZE.getType()), "asc");
 
-    // 마지막 데이터는 현재 분에 해당하는 캔들이므로 제거
-    candles.remove(candles.size() - 1);
-
     double rsi = upbitService.calculateRelativeStrengthIndex(candles, 14);
     double adx = upbitService.calculateAverageDirectionalMovementIndex(candles, 14);
 
@@ -49,7 +46,7 @@ public class ScalpingStrategy {
     ColorfulConsoleOutput.printWithColor(String.format("RSI: %s, ADX: %s", rsi, adx),
           ColorfulConsoleOutput.RED);
 
-    return (rsi <= 30 && adx >= 45) ? Signal.BUY : Signal.NO_ACTION;
+    return (rsi <= 30 && adx >= 40) ? Signal.BUY : Signal.NO_ACTION;
   }
 
   /**
@@ -79,6 +76,7 @@ public class ScalpingStrategy {
       // 현재 보유 금액이 최소주문금액 이하 종목은 추가 진행하지 않음.
       double buyAmount = account.getAvgBuyPrice() * account.getBalance();
       if (buyAmount <= 5000) {
+        System.out.println("매수평균가: " + account.getAvgBuyPrice() + " / 잔고: " + account.getBalance());
         // 현재수익률/목표수익률 로깅
         ColorfulConsoleOutput.printWithColor("최소 주문 금액 이하 종목 추가 진행 불가", ColorfulConsoleOutput.BLUE);
         return Signal.NO_ACTION;
@@ -99,18 +97,8 @@ public class ScalpingStrategy {
             String.format("현재수익률/목표수익률 : %.1f/%.1f", profitRate, targetProfit),
             ColorfulConsoleOutput.BLUE);
 
-      // timestamp 기준 오름차순 정렬된 지수 이동 평균 데이터 조회
-      List<CandleResponseDto> candles =
-            upbitService.getMinuteCandle(market, Unit.UNIT_1,
-                  Integer.parseInt(UpbitType.MAX_CANDLE_SIZE.getType()), "asc");
-
-      // 마지막 데이터는 현재 분에 해당하는 캔들이므로 제거
-      candles.remove(candles.size() - 1);
-
-      double rsi = upbitService.calculateRelativeStrengthIndex(candles, 14);
-
       // 손절목표 금액에 도달한경우 손절 신호 발생
-      if (rsi >= 70 && profitRate < -2) {
+      if (profitRate < -5) {
         return Signal.STOP_LOSS;
       }
 
