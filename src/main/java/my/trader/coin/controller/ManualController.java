@@ -1,7 +1,6 @@
 package my.trader.coin.controller;
 
 import java.util.Map;
-import my.trader.coin.service.UpbitService;
 import my.trader.coin.util.AuthorizationGenerator;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,12 +9,9 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 public class ManualController {
-  private final UpbitService upbitService;
   private final AuthorizationGenerator authorizationGenerator;
 
-  public ManualController(UpbitService upbitService,
-                          AuthorizationGenerator authorizationGenerator) {
-    this.upbitService = upbitService;
+  public ManualController(AuthorizationGenerator authorizationGenerator) {
     this.authorizationGenerator = authorizationGenerator;
   }
 

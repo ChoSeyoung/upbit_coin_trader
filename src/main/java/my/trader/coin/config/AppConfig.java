@@ -14,19 +14,23 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class AppConfig {
+  // UBMI(UpBit Market Index)
   @Setter
   public static double upbitMarketIndexRatio;
+  // 매수/매도 예정 종목
   @Setter
   public static List<String> scheduledMarket;
-  @Setter
-  public static boolean holdTrade;
-
+  // 수익실현 시 전체 물량 매도 여부
   public static boolean wholeSellWhenProfit;
+  // 거래대금 상위 항목 동적 종목 추가 여부
   public static boolean includeTopTradingStocks;
+  // 거래 수수료율 (업비트 정책)
   public static double exchangeFeeRatio;
+  // 최소 주문금액 (업비트 정책)
   public static double minOrderAmount;
-  public static double minBuyAmount;
-  public static double minSellAmount;
+  // 최소 매수/매도금액 (1회당 개인 매수/매도 금액(스케줄러에서 재조정))
+  public static double minTradeAmount;
+  // 익절율
   public static double takeProfitPercentage;
 
   static {
@@ -34,14 +38,12 @@ public class AppConfig {
     scheduledMarket = new ArrayList<>(
           Arrays.asList(MarketCode.KRW_BTC.getSymbol(), MarketCode.KRW_ETH.getSymbol(),
                 MarketCode.KRW_XRP.getSymbol()));
-    holdTrade = true;
 
     wholeSellWhenProfit = true;
     includeTopTradingStocks = true;
     exchangeFeeRatio = 1.0005;
     minOrderAmount = 5001;
-    minBuyAmount = 100000;
-    minSellAmount = 100000;
+    minTradeAmount = 250000;
     takeProfitPercentage = 0.3;
   }
 }

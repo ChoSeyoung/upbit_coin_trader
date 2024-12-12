@@ -12,21 +12,36 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+/**
+ * 외부 유틸리티.
+ */
 @Component
 public class ExternalUtility {
   private final WebClient webClient;
   private final ObjectMapper objectMapper;
 
+  /**
+   * constructor.
+   */
   public ExternalUtility(WebClient.Builder webClientBuilder) {
     this.webClient = webClientBuilder.build();
     this.objectMapper = new ObjectMapper();
     this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
   }
 
+  /**
+   * 삭제 API with 인증.
+   *
+   * @param uri                api endpoint.
+   * @param requestBody        request body
+   * @param responseType       response type
+   * @param authorizationToken auth token
+   * @param <T>                response
+   * @return T
+   */
   public <T> T deleteWithAuth(URI uri, Object requestBody, Class<T> responseType,
                               String authorizationToken) {
-    ColorfulConsoleOutput.printWithColor("DELETE Request Uri: " + uri,
-          ColorfulConsoleOutput.PURPLE);
+    // ColorfulConsoleOutput.printWithColor("DELETE Request Uri: " + uri, ColorfulConsoleOutput.PURPLE);
 
     return webClient.delete()
           .uri(uri)
@@ -38,8 +53,16 @@ public class ExternalUtility {
           .block();
   }
 
+  /**
+   * 조회 API without 인증.
+   *
+   * @param uri          api endpoint
+   * @param responseType response type
+   * @param <T>          T
+   * @return T
+   */
   public <T> List<T> getWithoutAuth(URI uri, Class<T> responseType) {
-     ColorfulConsoleOutput.printWithColor("GET Request Uri: " + uri, ColorfulConsoleOutput.PURPLE);
+    // ColorfulConsoleOutput.printWithColor("GET Request Uri: " + uri, ColorfulConsoleOutput.PURPLE);
 
     return webClient.get()
           .uri(uri)
@@ -51,8 +74,17 @@ public class ExternalUtility {
           .block();
   }
 
+  /**
+   * 조회 API with 인증.
+   *
+   * @param uri                api endpoint
+   * @param responseType       response type
+   * @param authorizationToken auth token
+   * @param <T>                T
+   * @return T
+   */
   public <T> List<T> getWithAuth(URI uri, Class<T> responseType, String authorizationToken) {
-     ColorfulConsoleOutput.printWithColor("GET Request Uri: " + uri, ColorfulConsoleOutput.PURPLE);
+    // ColorfulConsoleOutput.printWithColor("GET Request Uri: " + uri, ColorfulConsoleOutput.PURPLE);
 
     return webClient.get()
           .uri(uri)
@@ -65,9 +97,18 @@ public class ExternalUtility {
           .block();
   }
 
+  /**
+   * 생성 API with 인증.
+   *
+   * @param uri                api endpoint
+   * @param responseType       response type
+   * @param authorizationToken auth token
+   * @param <T>                T
+   * @return T
+   */
   public <T> T postWithAuth(URI uri, Object requestBody, Class<T> responseType,
-                           String authorizationToken) {
-    ColorfulConsoleOutput.printWithColor("POST Request Uri: " + uri, ColorfulConsoleOutput.PURPLE);
+                            String authorizationToken) {
+    // ColorfulConsoleOutput.printWithColor("POST Request Uri: " + uri, ColorfulConsoleOutput.PURPLE);
 
     return webClient.post()
           .uri(uri)
@@ -80,6 +121,12 @@ public class ExternalUtility {
           .block();
   }
 
+  /**
+   * 에러 핸들링.
+   *
+   * @param response response
+   * @return Mono
+   */
   private Mono<Throwable> handleError(ClientResponse response) {
     return response.bodyToMono(String.class)
           .flatMap(errorBody -> {
@@ -88,6 +135,14 @@ public class ExternalUtility {
           });
   }
 
+  /**
+   * JSON list 객체 파싱.
+   *
+   * @param json        json string
+   * @param elementType T
+   * @param <T>         T
+   * @return T
+   */
   private <T> Mono<List<T>> parseJsonList(String json, Class<T> elementType) {
     try {
       CollectionType javaType =

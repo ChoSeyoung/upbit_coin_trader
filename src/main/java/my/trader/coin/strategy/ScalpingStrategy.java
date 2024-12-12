@@ -39,13 +39,16 @@ public class ScalpingStrategy {
           upbitService.getMinuteCandle(market, Unit.UNIT_1,
                 Integer.parseInt(UpbitType.MAX_CANDLE_SIZE.getType()), "asc");
 
+    // RSI 계산
     double rsi = upbitService.calculateRelativeStrengthIndex(candles, 14);
+    // ADX 계산
     double adx = upbitService.calculateAverageDirectionalMovementIndex(candles, 14);
 
     // RSI & ADX 로깅
     ColorfulConsoleOutput.printWithColor(String.format("RSI: %s, ADX: %s", rsi, adx),
           ColorfulConsoleOutput.RED);
 
+    // 매수 조건 설정 후 플래그 응답
     return (rsi <= 30 && adx >= 40) ? Signal.BUY : Signal.NO_ACTION;
   }
 
@@ -60,7 +63,9 @@ public class ScalpingStrategy {
     ColorfulConsoleOutput.printWithColor(String.format("[%s] 매도 의사결정을 위한 가격 확인", market),
           ColorfulConsoleOutput.BLUE);
 
+    // 화폐 단위 확인
     String currency = market.split("-")[1];
+    // 보유 잔고 조회
     List<AccountResponseDto> accounts = upbitService.getAccount();
 
     // 목표 암호화폐 지정
@@ -98,7 +103,7 @@ public class ScalpingStrategy {
             ColorfulConsoleOutput.BLUE);
 
       // 손절목표 금액에 도달한경우 손절 신호 발생
-      if (profitRate < -5) {
+      if (profitRate < -2) {
         return Signal.STOP_LOSS;
       }
 

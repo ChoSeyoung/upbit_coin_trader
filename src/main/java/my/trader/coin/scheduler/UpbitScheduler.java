@@ -12,8 +12,6 @@ import my.trader.coin.service.UpbitService;
 import my.trader.coin.strategy.ScalpingStrategy;
 import my.trader.coin.util.MathUtility;
 import my.trader.coin.util.TimeUtility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -22,18 +20,15 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class UpbitScheduler {
-  private static final Logger logger = LoggerFactory.getLogger(UpbitScheduler.class);
-
-  // market별 마지막 매수 시간을 저장하는 Map
+  // market 별 마지막 매수 시간을 저장하는 Map
   private final Map<String, Long> lastBuyTimeMap = new HashMap<>();
-
+  // 스케줄러 사이클 카운트
   private int schedulerExecutedCount = 0;
+  // 콘솔 데이터 출력용 formatter
+  DecimalFormat df = new DecimalFormat("#,##0.00");
 
   private final UpbitService upbitService;
   private final ScalpingStrategy scalpingStrategy;
-
-  // 콘솔 데이터 출력용 formatter
-  DecimalFormat df = new DecimalFormat("#,##0.00");
 
   /**
    * this is constructor.
@@ -50,10 +45,22 @@ public class UpbitScheduler {
   }
 
   /**
-   * 매 분마다 시장 데이터를 가져오고 스캘핑 전략을 실행합니다.
+   * 매 1분 정각 마다 UBMI 인덱스를 계산합니다.
+   */
+  @Scheduled(cron = "0 */5 * * * *") // 매 분 정각에 실행
+  public void updateUpbitMarketIndex() {
+    this.calculateUpbitMarketIndex();
+  }
+
+  /**
+   * 매 30초 마다 시장 데이터를 가져오고 스캘핑 전략을 실행합니다.
    */
   @Scheduled(cron = "0,30 * * * * *")
   public void runStrategy() {
+    if (AppConfig.upbitMarketIndexRatio == 0.0) {
+      this.calculateUpbitMarketIndex();
+    }
+
     // 스케줄러 실행전 미체결된 매도 주문 취소 접수
     List<CancelOrderResponseDto> cancelSellOrders = upbitService.beforeTaskExecution();
     if (!cancelSellOrders.isEmpty()) {
@@ -76,13 +83,47 @@ public class UpbitScheduler {
   }
 
   /**
+   * UBMI 인덱스를 계산합니다.
+   */
+  private void calculateUpbitMarketIndex() {
+    double baseAmount = AppConfig.minTradeAmount;
+    double newUpbitMarketIndexRatio = upbitService.getUpbitMarketIndexTop10();
+
+    AppConfig.upbitMarketIndexRatio = newUpbitMarketIndexRatio;
+
+    // 20% 증감 비율
+    double adjustmentRate = 0.2;
+    double adjustedAmount;
+
+    // UBMI 10 인덱스
+    if (newUpbitMarketIndexRatio > 0) {
+      // 상승 시 복리 증가
+      adjustedAmount = baseAmount * Math.pow(1 + adjustmentRate, newUpbitMarketIndexRatio);
+    } else {
+      // 하락 시 복리 감소
+      adjustedAmount =
+            baseAmount * Math.pow(1 - adjustmentRate, Math.abs(newUpbitMarketIndexRatio));
+    }
+
+    // 1,000원 단위로 반올림
+    AppConfig.minTradeAmount = Math.round(adjustedAmount / 1000.0) * 1000.0;
+
+    // 완료 로깅
+    ColorfulConsoleOutput.printWithColor(
+          String.format("매수/매도 금액 설정: %s, UBMI 10: %s%%", df.format(AppConfig.minTradeAmount),
+                df.format(AppConfig.upbitMarketIndexRatio)), ColorfulConsoleOutput.GREEN);
+  }
+
+  /**
    * 매수 프로세스.
    */
   private void runBuy() {
+    ColorfulConsoleOutput.printWithColor("매수 시작", ColorfulConsoleOutput.RED);
+
     List<String> markets = AppConfig.scheduledMarket;
 
     // 주문 수량 계산
-    Double minimumOrderAmount = AppConfig.minBuyAmount;
+    Double minimumOrderAmount = AppConfig.minTradeAmount;
 
     // 시장 데이터 조회
     List<TickerResponseDto> tickerDataList = upbitService.getTicker(markets);
@@ -134,8 +175,10 @@ public class UpbitScheduler {
    * 매도 프로세스.
    */
   private void runSell() {
+    ColorfulConsoleOutput.printWithColor("매도 시작", ColorfulConsoleOutput.BLUE);
+
     // 주문 수량 계산
-    double minimumOrderAmount = AppConfig.minSellAmount;
+    double minimumOrderAmount = AppConfig.minTradeAmount;
 
     // 계좌 조회
     List<AccountResponseDto> accounts = upbitService.getAccount();
@@ -145,6 +188,11 @@ public class UpbitScheduler {
           .filter(account -> !"KRW".equals(account.getCurrency()))
           .map(account -> account.getUnitCurrency() + "-" + account.getCurrency())
           .toList();
+
+    // 보유 계좌에 현금만 있는 경우 얼리 리턴 처리
+    if (markets.isEmpty()) {
+      return;
+    }
 
     // 시장 데이터 조회
     List<TickerResponseDto> tickerDataList = upbitService.getTicker(markets);
@@ -175,7 +223,8 @@ public class UpbitScheduler {
             Double quantity = MathUtility.calculateMinimumOrderQuantity(minimumOrderAmount,
                   tickerData.getTradePrice());
 
-            // 전량 매도 플래그 활성화시 익절 시그널 발생되면 전량 매도
+            // 수익실현 플래그 활성화 시 전량 매도
+            // 손절 플래그 활성화 시 전략 매도
             if (sellSignal.equals(Signal.TAKE_PROFIT)) {
               // 전량 매도
               if (AppConfig.wholeSellWhenProfit) {

@@ -4,12 +4,10 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.*;
 import my.trader.coin.config.AppConfig;
+import my.trader.coin.dto.bootleg.UpbitMarketIndexTop10Dto;
 import my.trader.coin.dto.exchange.*;
 import my.trader.coin.dto.quotation.*;
-import my.trader.coin.enums.ColorfulConsoleOutput;
-import my.trader.coin.enums.Unit;
-import my.trader.coin.enums.UpbitApi;
-import my.trader.coin.enums.UpbitType;
+import my.trader.coin.enums.*;
 import my.trader.coin.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -290,7 +288,7 @@ public class UpbitService {
    * RSI 지표를 계산하여 반환합니다.
    *
    * @param candles 캔들 리스트
-   * @param weight RSI 지표 계산을 위한 가중치
+   * @param weight  RSI 지표 계산을 위한 가중치
    * @return RSI 지표 값
    */
   public Double calculateRelativeStrengthIndex(List<CandleResponseDto> candles, int weight) {
@@ -331,10 +329,11 @@ public class UpbitService {
    * ADX 지표를 계산하여 반환합니다.
    *
    * @param candles 캔들 리스트
-   * @param weight ADX 지표 계산을 위한 가중치
+   * @param weight  ADX 지표 계산을 위한 가중치
    * @return ADX 지표 값
    */
-  public double calculateAverageDirectionalMovementIndex(List<CandleResponseDto> candles, int weight) {
+  public double calculateAverageDirectionalMovementIndex(List<CandleResponseDto> candles,
+                                                         int weight) {
     int size = candles.size();
     if (size < weight * 2) {
       throw new IllegalArgumentException("캔들 데이터가 부족합니다.");
@@ -361,7 +360,8 @@ public class UpbitService {
 
       tr[i] = Math.max(
             current.getHighPrice() - current.getLowPrice(),
-            Math.max(Math.abs(current.getHighPrice() - prev.getTradePrice()), Math.abs(current.getLowPrice() - prev.getTradePrice()))
+            Math.max(Math.abs(current.getHighPrice() - prev.getTradePrice()),
+                  Math.abs(current.getLowPrice() - prev.getTradePrice()))
       );
 
       plusDM[i] = (highDiff > lowDiff && highDiff > 0) ? highDiff : 0;
@@ -404,6 +404,7 @@ public class UpbitService {
   public void addScheduledMarket() {
     // 거래대금 상위종목 포함 여부 결정 플래그 확인 후 종목 선정
     List<String> topTradingMarkets = new ArrayList<>();
+    // 거래대금 상위 종목 거래 여부 체크 후 처리
     if (AppConfig.includeTopTradingStocks) {
       List<MarketResponseDto> marketResponses = this.getMarket();
 
@@ -411,31 +412,70 @@ public class UpbitService {
             .map(MarketResponseDto::getMarket)
             .toList();
 
+      // 종목 단위 현재가 정보 조회
       List<TickerResponseDto> tickers = this.getTicker(markets);
 
       // 24시간 누적 거래액 상위 10종목
       topTradingMarkets = tickers.stream()
-//            .filter(ticker -> ticker.getChangeRate() <= 0.05)
+            // 24시간 거래대금 기준 DESC
             .sorted(Comparator.comparing(TickerResponseDto::getAccTradePrice24h).reversed())
-            .limit(30)
+            // 전일대비 5% 이하 변동률을 가진 종목만 선택
+            .filter(ticker -> ticker.getChangeRate() <= 0.05)
+            // TickerResponseDto DTO 로 변환
             .map(TickerResponseDto::getMarket)
+            // 변동률이 적은 USDT 코인은 스캘핑 대상 제외
+            .filter(market -> !market.equals(MarketCode.KRW_USDT.getSymbol()))
+            // 필터링된 종목중 상위 10개만 이용
+            .limit(10)
             .toList();
     }
 
+    // 현재 보유 잔고 조회
     List<AccountResponseDto> accounts = this.getAccount();
+    // 현재 보유 잔고 리스트
     List<String> holdingMarkets = accounts.stream()
+          // KRW 는 종목이 아니므로 필터링
           .filter(account -> !"KRW".equals(account.getCurrency()))
+          // 보여종목 리스팅을 위하여 화폐단위 + 마켓코드 조합 처리
           .map(account -> account.getUnitCurrency() + "-" + account.getCurrency())
           .toList();
 
+    // 중복 제거를 위한 Set 컬렉션 생성
     Set<String> set = new HashSet<>();
+    // 선택된 매수 추가
     set.addAll(AppConfig.scheduledMarket);
+    // 보여 종목 추가
     set.addAll(holdingMarkets);
+    // 거래대금 상위 종목 추가
     set.addAll(topTradingMarkets);
 
     AppConfig.setScheduledMarket(new ArrayList<>(set));
 
     ColorfulConsoleOutput.printWithColor("종목 업데이트 완료: " + AppConfig.scheduledMarket,
           ColorfulConsoleOutput.GREEN);
+  }
+
+  /**
+   * UBMI 10 조회.
+   *
+   * @return UBMI 10 변동률 값
+   */
+  public double getUpbitMarketIndexTop10() {
+    String url = UpbitApi.GET_UPBIT_MARKET_INDEX_TOP10.getUrl();
+
+    URI uri = UriComponentsBuilder.fromHttpUrl(url).build().toUri();
+
+    UpbitMarketIndexTop10Dto result =
+          externalUtility.getWithoutAuth(uri, UpbitMarketIndexTop10Dto.class).get(0);
+
+    // 1. 상승률 조회 = (현재가 - 이전종가) / 이전종가 * 100
+    double value = (result.getTradePrice() - result.getPrevClosingPrice()) / result.getPrevClosingPrice()
+          * 100;
+
+    // 2. 소수점 세 번째 자리에서 올림 처리
+    double roundedUp = Math.ceil(value * 1000) / 1000;
+
+    // 3. 소수점 두 번째 자리까지만 유지
+    return Math.floor(roundedUp * 100) / 100;
   }
 }

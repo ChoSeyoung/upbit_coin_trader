@@ -1,5 +1,8 @@
 package my.trader.coin.enums;
 
+/**
+ * 매수, 매도(익절, 손절 포함), 액션에 대한 플래그.
+ */
 public enum Signal {
   NO_ACTION,
   BUY,

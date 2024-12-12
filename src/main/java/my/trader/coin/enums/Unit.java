@@ -2,6 +2,10 @@ package my.trader.coin.enums;
 
 import lombok.Getter;
 
+/**
+ * 업비트 정책
+ * 캔들 단위 x분 에 대한 정의.
+ */
 @Getter
 public enum Unit {
   UNIT_1(1),

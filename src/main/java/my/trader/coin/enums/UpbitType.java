@@ -2,6 +2,10 @@ package my.trader.coin.enums;
 
 import lombok.Getter;
 
+/**
+ * 업비트 정책
+ * 업비트에서 사용되는 타입에 대한 정의.
+ */
 @Getter
 public enum UpbitType {
   // 매수

@@ -3,9 +3,8 @@ package my.trader.coin.enums;
 import lombok.Getter;
 
 /**
- * market 은 Upbit 에서 사용할 수 있는 다양한 Symbol 의 집합체입니다.
- * 해당 심볼은 원화를 기준으로 작성되었습니다.
- * 필요할 경우 추가하도록 합니다.
+ * 업비트 정책
+ * 원화 기준 종목 코드.
  */
 @Getter
 public enum MarketCode {
@@ -14,7 +13,9 @@ public enum MarketCode {
   // 이더리움
   KRW_ETH("KRW-ETH"),
   // 리플
-  KRW_XRP("KRW-XRP");
+  KRW_XRP("KRW-XRP"),
+  // USDT
+  KRW_USDT("KRW-USDT");
 
   private final String symbol;
 
