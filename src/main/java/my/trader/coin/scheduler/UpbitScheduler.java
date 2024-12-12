@@ -139,8 +139,8 @@ public class UpbitScheduler {
 
         // 마지막 매수 시간 확인
         Long lastBuyTime = lastBuyTimeMap.get(market);
-        // 2분 이내면 매수를 건너뜀
-        if (lastBuyTime != null && (currentTime - lastBuyTime) < 2 * 60 * 1000) {
+        // 1.5분 이내면 매수를 건너뜀
+        if (lastBuyTime != null && (currentTime - lastBuyTime) < 1.5 * 60 * 1000) {
           continue;
         }
 
