@@ -29,6 +29,8 @@ public class AppConfig {
   // 최소 주문금액 (업비트 정책)
   public static double minOrderAmount;
   // 최소 매수/매도금액 (1회당 개인 매수/매도 금액(스케줄러에서 재조정))
+  public static double baseTradeAmount;
+  // 최소 매수/매도금액 (1회당 개인 매수/매도 금액(스케줄러에서 재조정))
   public static double minTradeAmount;
   // 익절율
   public static double takeProfitPercentage;
@@ -43,6 +45,7 @@ public class AppConfig {
     includeTopTradingStocks = true;
     exchangeFeeRatio = 1.0005;
     minOrderAmount = 5001;
+    baseTradeAmount = 250000;
     minTradeAmount = 250000;
     takeProfitPercentage = 0.3;
   }

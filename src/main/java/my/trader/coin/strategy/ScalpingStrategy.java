@@ -49,7 +49,7 @@ public class ScalpingStrategy {
           ColorfulConsoleOutput.RED);
 
     // 매수 조건 설정 후 플래그 응답
-    return (rsi <= 30 && adx >= 40) ? Signal.BUY : Signal.NO_ACTION;
+    return (rsi <= 30 && adx >= 35) ? Signal.BUY : Signal.NO_ACTION;
   }
 
   /**

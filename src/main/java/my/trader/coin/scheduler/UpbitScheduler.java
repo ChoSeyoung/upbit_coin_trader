@@ -86,7 +86,7 @@ public class UpbitScheduler {
    * UBMI 인덱스를 계산합니다.
    */
   private void calculateUpbitMarketIndex() {
-    double baseAmount = AppConfig.minTradeAmount;
+    double baseAmount = AppConfig.baseTradeAmount;
     double newUpbitMarketIndexRatio = upbitService.getUpbitMarketIndexTop10();
 
     AppConfig.upbitMarketIndexRatio = newUpbitMarketIndexRatio;
