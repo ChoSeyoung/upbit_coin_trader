@@ -488,8 +488,8 @@ public class UpbitService {
    * -1 이하 값은 소숫점 첫번째 자리에서 내림처리 후 -5를 곱하여 기본 ADX 에 합산 (-ADX * -5 = 5ADX)
    * @return 최소 구매 ADX 값
    */
-  public int calculatePurchaseAdx() {
-    int defaultAdx = 30;
+  public double calculatePurchaseAdx() {
+    double defaultAdx = 30.0;
     double ratio = AppConfig.upbitMarketIndexRatio;
 
     // -0.99 까지는 소숫점 첫번째 자리에서 올림처리
@@ -503,7 +503,7 @@ public class UpbitService {
       roundedValue = (int) Math.floor(ratio) * -1;
     }
 
-    int multipliedValue = roundedValue * 5;
+    double multipliedValue = roundedValue * 5;
 
     return defaultAdx + multipliedValue;
   }
