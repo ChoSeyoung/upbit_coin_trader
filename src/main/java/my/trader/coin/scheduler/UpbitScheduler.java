@@ -236,7 +236,7 @@ public class UpbitScheduler {
 
             // 매도 신호가 발생하면 매도 로직 실행
             // 매도금액은 최소주문 금액보다 많아야 처리 가능(업비트 정책)
-            if (tickerData.getTradePrice() * quantity >= minimumOrderAmount) {
+            if (tickerData.getTradePrice() * quantity >= AppConfig.minOrderAmount) {
               OrderResponseDto result =
                     upbitService.executeOrder(market, tickerData.getTradePrice(), quantity,
                           UpbitType.ORDER_SIDE_ASK.getType());

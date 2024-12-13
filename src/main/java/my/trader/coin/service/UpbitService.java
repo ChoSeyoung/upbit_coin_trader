@@ -268,7 +268,9 @@ public class UpbitService {
       // 각 uuid 기준으로 주문 취소 요청
       for (OpenOrderResponseDto openOrderResponseDto : openOrders) {
         // 매도 주문은 해당 메서드에서 처리하지 않음 (#23)
-        if (openOrderResponseDto.getSide().equals("ask")) continue;
+        if (openOrderResponseDto.getSide().equals("ask")) {
+          continue;
+        }
 
         // uuid 조회
         String uuid = openOrderResponseDto.getUuid();
@@ -477,5 +479,32 @@ public class UpbitService {
 
     // 3. 소수점 두 번째 자리까지만 유지
     return Math.floor(roundedUp * 100) / 100;
+  }
+
+  /**
+   * 구매 기준 ADX 를 구합니다.
+   * 0.1 이상 값은 소숫점 첫번째 자리에서 올림처리 후 +5를 곱하여 기본 ADX 에 합산 (ADX * 5 = 5ADX)
+   * -0.99 ~ 0.99 값은 기본 ADX 리턴
+   * -1 이하 값은 소숫점 첫번째 자리에서 내림처리 후 -5를 곱하여 기본 ADX 에 합산 (-ADX * -5 = 5ADX)
+   * @return 최소 구매 ADX 값
+   */
+  public int calculatePurchaseAdx() {
+    int defaultAdx = 30;
+    double ratio = AppConfig.upbitMarketIndexRatio;
+
+    // -0.99 까지는 소숫점 첫번째 자리에서 올림처리
+    // -1 부터
+    int roundedValue;
+    if (ratio > 0) {
+      roundedValue = (int) Math.ceil(ratio);
+    } else if (ratio > -1) {
+      roundedValue = 0;
+    } else {
+      roundedValue = (int) Math.floor(ratio) * -1;
+    }
+
+    int multipliedValue = roundedValue * 5;
+
+    return defaultAdx + multipliedValue;
   }
 }
