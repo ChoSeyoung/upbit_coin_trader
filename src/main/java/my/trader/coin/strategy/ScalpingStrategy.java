@@ -83,7 +83,6 @@ public class ScalpingStrategy {
       // 현재 보유 금액이 최소주문금액 이하 종목은 추가 진행하지 않음.
       double buyAmount = account.getAvgBuyPrice() * account.getBalance();
       if (buyAmount <= 5000) {
-        System.out.println("매수평균가: " + account.getAvgBuyPrice() + " / 잔고: " + account.getBalance());
         // 현재수익률/목표수익률 로깅
         ColorfulConsoleOutput.printWithColor("최소 주문 금액 이하 종목 추가 진행 불가", ColorfulConsoleOutput.BLUE);
         return Signal.NO_ACTION;

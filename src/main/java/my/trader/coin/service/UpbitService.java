@@ -416,9 +416,18 @@ public class UpbitService {
    */
   public void selectUbmi10MarketSelectStrategy() {
     List<String> ubmi10Markets = new ArrayList<>(
-          Arrays.asList(MarketCode.KRW_BTC.getSymbol(), MarketCode.KRW_ETH.getSymbol(),
-                MarketCode.KRW_XRP.getSymbol(), MarketCode.KRW_SOL.getSymbol(), MarketCode.KRW_DOGE.getSymbol()));
-
+          Arrays.asList(
+                MarketCode.KRW_BTC.getSymbol(),
+                MarketCode.KRW_ETH.getSymbol(),
+                MarketCode.KRW_XRP.getSymbol(),
+                MarketCode.KRW_SOL.getSymbol(),
+                MarketCode.KRW_DOGE.getSymbol(),
+                MarketCode.KRW_ADA.getSymbol(),
+                MarketCode.KRW_TRX.getSymbol(),
+                MarketCode.KRW_AVAX.getSymbol(),
+                MarketCode.KRW_SHIB.getSymbol(),
+                MarketCode.KRW_XML.getSymbol()
+          ));
     // 현재 보유 잔고 조회
     List<AccountResponseDto> accounts = this.getAccount();
     // 현재 보유 잔고 리스트

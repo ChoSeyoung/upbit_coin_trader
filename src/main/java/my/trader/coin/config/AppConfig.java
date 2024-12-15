@@ -55,8 +55,8 @@ public class AppConfig {
     includeTopTradingStocks = true;
     exchangeFeeRatio = 1.0005;
     minOrderAmount = 5001;
-    baseTradeAmount = 500000;
-    minTradeAmount = 500000;
-    takeProfitPercentage = 0.4;
+    baseTradeAmount = 250000;
+    minTradeAmount = 250000;
+    takeProfitPercentage = 0.5;
   }
 }

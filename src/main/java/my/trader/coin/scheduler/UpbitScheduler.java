@@ -130,8 +130,6 @@ public class UpbitScheduler {
       return;
     }
 
-    ColorfulConsoleOutput.printWithColor("매수 시작", ColorfulConsoleOutput.RED);
-
     List<String> markets = AppConfig.scheduledMarket;
 
     // 주문 수량 계산
@@ -186,8 +184,6 @@ public class UpbitScheduler {
    * 매도 프로세스.
    */
   private void runSell() {
-    ColorfulConsoleOutput.printWithColor("매도 시작", ColorfulConsoleOutput.BLUE);
-
     // 주문 수량 계산
     double minimumOrderAmount = AppConfig.minTradeAmount;
 

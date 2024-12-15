@@ -18,6 +18,16 @@ public enum MarketCode {
   KRW_SOL("KRW-SOL"),
   // 도지코인
   KRW_DOGE("KRW-DOGE"),
+  // 에이다
+  KRW_ADA("KRW-ADA"),
+  // 트론
+  KRW_TRX("KRW-TRX"),
+  // 아발란체
+  KRW_AVAX("KRW-AVAX"),
+  // 시바이누
+  KRW_SHIB("KRW-SHIB"),
+  // 스텔라루멘
+  KRW_XML("KRW-XLM"),
   // 테더
   KRW_USDT("KRW-USDT"),
   // 매직에덴
