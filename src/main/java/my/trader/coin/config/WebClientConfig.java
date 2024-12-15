@@ -18,6 +18,9 @@ import reactor.util.retry.Retry;
 
 import java.time.Duration;
 
+/**
+ * WebClient 라이브러리 Global 설정.
+ */
 @Configuration
 public class WebClientConfig {
 

@@ -45,9 +45,9 @@ public class UpbitScheduler {
   }
 
   /**
-   * 매 1분 정각 마다 UBMI 인덱스를 계산합니다.
+   * 매 5분 마다 UBMI 인덱스를 계산합니다.
    */
-  @Scheduled(cron = "0 */5 * * * *") // 매 분 정각에 실행
+  @Scheduled(cron = "0 */5 * * * *")
   public void updateUpbitMarketIndex() {
     this.calculateUpbitMarketIndex();
   }
@@ -67,15 +67,15 @@ public class UpbitScheduler {
       ColorfulConsoleOutput.printWithColor("매수/매도 주문 잔여 수량 취소 작업 진행 완료",
             ColorfulConsoleOutput.GREEN);
     }
-    TimeUtility.sleep(0.5);
+
+    // 종목 선정
+    upbitService.addScheduledMarket();
 
     // 매수 프로세스 실행
     runBuy();
-    TimeUtility.sleep(0.5);
 
     // 매도 프로세스 실행
     runSell();
-    TimeUtility.sleep(0.5);
 
     // 완료 로깅
     ColorfulConsoleOutput.printWithColor(++schedulerExecutedCount + " set cleared",
@@ -118,6 +118,18 @@ public class UpbitScheduler {
    * 매수 프로세스.
    */
   private void runBuy() {
+    // 매수 프로세스 실행 시 현재 보유 현금량을 확인하고 최소주문금액보다 적게 있는 경우 프로세스를 종료
+    List<AccountResponseDto> accounts = upbitService.getAccount();
+    AccountResponseDto krwAccount = accounts.stream()
+          .filter(account -> "KRW".equals(account.getCurrency()))
+          .findFirst()
+          .orElse(null);
+
+    assert krwAccount != null;
+    if (krwAccount.getBalance() < AppConfig.minTradeAmount) {
+      return;
+    }
+
     ColorfulConsoleOutput.printWithColor("매수 시작", ColorfulConsoleOutput.RED);
 
     List<String> markets = AppConfig.scheduledMarket;
@@ -140,7 +152,7 @@ public class UpbitScheduler {
         // 마지막 매수 시간 확인
         Long lastBuyTime = lastBuyTimeMap.get(market);
         // 1.5분 이내면 매수를 건너뜀
-        if (lastBuyTime != null && (currentTime - lastBuyTime) < 1.5 * 60 * 1000) {
+        if (lastBuyTime != null && (currentTime - lastBuyTime) < 2 * 60 * 1000) {
           continue;
         }
 
@@ -168,7 +180,6 @@ public class UpbitScheduler {
         TimeUtility.sleep(0.5);
       }
     }
-    upbitService.addScheduledMarket();
   }
 
   /**
@@ -255,6 +266,5 @@ public class UpbitScheduler {
         TimeUtility.sleep(0.5);
       }
     }
-    upbitService.addScheduledMarket();
   }
 }

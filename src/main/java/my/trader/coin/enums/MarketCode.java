@@ -14,8 +14,15 @@ public enum MarketCode {
   KRW_ETH("KRW-ETH"),
   // 리플
   KRW_XRP("KRW-XRP"),
-  // USDT
-  KRW_USDT("KRW-USDT");
+  // 솔라나
+  KRW_SOL("KRW-SOL"),
+  // 도지코인
+  KRW_DOGE("KRW-DOGE"),
+  // 테더
+  KRW_USDT("KRW-USDT"),
+  // 매직에덴
+  KRW_ME("KRW-ME");
+
 
   private final String symbol;
 

@@ -20,33 +20,43 @@ public class AppConfig {
   // 매수/매도 예정 종목
   @Setter
   public static List<String> scheduledMarket;
+  public static List<String> initScheduledMarket;
+  public static String activatedMarketSelectStrategy;
+
   // 수익실현 시 전체 물량 매도 여부
   public static boolean wholeSellWhenProfit;
+
   // 거래대금 상위 항목 동적 종목 추가 여부
   public static boolean includeTopTradingStocks;
+
   // 거래 수수료율 (업비트 정책)
   public static double exchangeFeeRatio;
   // 최소 주문금액 (업비트 정책)
   public static double minOrderAmount;
+
   // 최소 매수/매도금액 (1회당 개인 매수/매도 금액(스케줄러에서 재조정))
+  // baseTradeAmount 는 매수/매도 금액에 대한 기준점을 제시합니다.
+  // minTradeAmount 는 baseTradeAmount 에 UBMI 10 지수를 고려하여 최종적으로 거래 1회당 발생될 금액을 제시합니다.
   public static double baseTradeAmount;
-  // 최소 매수/매도금액 (1회당 개인 매수/매도 금액(스케줄러에서 재조정))
   public static double minTradeAmount;
+
   // 익절율
   public static double takeProfitPercentage;
 
   static {
     upbitMarketIndexRatio = 0.0;
-    scheduledMarket = new ArrayList<>(
+    initScheduledMarket = new ArrayList<>(
           Arrays.asList(MarketCode.KRW_BTC.getSymbol(), MarketCode.KRW_ETH.getSymbol(),
                 MarketCode.KRW_XRP.getSymbol()));
+    scheduledMarket = initScheduledMarket;
+    activatedMarketSelectStrategy = "ubmi_10";
 
     wholeSellWhenProfit = true;
     includeTopTradingStocks = true;
     exchangeFeeRatio = 1.0005;
     minOrderAmount = 5001;
-    baseTradeAmount = 250000;
-    minTradeAmount = 250000;
-    takeProfitPercentage = 0.3;
+    baseTradeAmount = 500000;
+    minTradeAmount = 500000;
+    takeProfitPercentage = 0.4;
   }
 }

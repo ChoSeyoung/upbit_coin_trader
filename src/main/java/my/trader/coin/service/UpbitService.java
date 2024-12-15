@@ -242,51 +242,6 @@ public class UpbitService {
   }
 
   /**
-   * 작업 완료 후 매수 미체결 주문을 취소합니다.
-   *
-   * @return 취소된 주문 리스트
-   */
-  public List<CancelOrderResponseDto> afterTaskCompletion() {
-    List<CancelOrderResponseDto> results = new ArrayList<>();
-
-    // 계좌 조회
-    List<AccountResponseDto> accounts = this.getAccount();
-
-    // 종목별 미체결 주문 조회
-    for (AccountResponseDto accountResponseDto : accounts) {
-      // 현금 주문은 조회 제외
-      if (accountResponseDto.getCurrency().equals("KRW")) {
-        continue;
-      }
-
-      // 마켓코드 할당
-      String market = String.format("KRW-%s", accountResponseDto.getCurrency());
-
-      // 미체결 주문 조회
-      List<OpenOrderResponseDto> openOrders = this.getOpenOrders(market);
-
-      // 각 uuid 기준으로 주문 취소 요청
-      for (OpenOrderResponseDto openOrderResponseDto : openOrders) {
-        // 매도 주문은 해당 메서드에서 처리하지 않음 (#23)
-        if (openOrderResponseDto.getSide().equals("ask")) {
-          continue;
-        }
-
-        // uuid 조회
-        String uuid = openOrderResponseDto.getUuid();
-
-        // 미체결 주문 취소 요청
-        CancelOrderResponseDto result = this.cancelOrder(uuid);
-
-        // 결과값 추가
-        results.add(result);
-      }
-    }
-
-    return results;
-  }
-
-  /**
    * RSI 지표를 계산하여 반환합니다.
    *
    * @param candles 캔들 리스트
@@ -401,10 +356,9 @@ public class UpbitService {
   }
 
   /**
-   * 보유 종목을 스케줄링된 시장에 추가합니다.
+   * 거래대금 상위종목 포함 여부 결정 플래그 확인 후 종목 선정.
    */
-  public void addScheduledMarket() {
-    // 거래대금 상위종목 포함 여부 결정 플래그 확인 후 종목 선정
+  public void selectDynamicMarketSelectStrategy() {
     List<String> topTradingMarkets = new ArrayList<>();
     // 거래대금 상위 종목 거래 여부 체크 후 처리
     if (AppConfig.includeTopTradingStocks) {
@@ -421,8 +375,8 @@ public class UpbitService {
       topTradingMarkets = tickers.stream()
             // 24시간 거래대금 기준 DESC
             .sorted(Comparator.comparing(TickerResponseDto::getAccTradePrice24h).reversed())
-            // 전일대비 5% 이하 변동률을 가진 종목만 선택
-            .filter(ticker -> ticker.getChangeRate() <= 0.05)
+            // 전일대비 3% 이하 변동률을 가진 종목만 선택
+            .filter(ticker -> ticker.getChangeRate() <= 0.03)
             // TickerResponseDto DTO 로 변환
             .map(TickerResponseDto::getMarket)
             // 변동률이 적은 USDT 코인은 스캘핑 대상 제외
@@ -445,7 +399,7 @@ public class UpbitService {
     // 중복 제거를 위한 Set 컬렉션 생성
     Set<String> set = new HashSet<>();
     // 선택된 매수 추가
-    set.addAll(AppConfig.scheduledMarket);
+    set.addAll(AppConfig.initScheduledMarket);
     // 보여 종목 추가
     set.addAll(holdingMarkets);
     // 거래대금 상위 종목 추가
@@ -455,6 +409,48 @@ public class UpbitService {
 
     ColorfulConsoleOutput.printWithColor("종목 업데이트 완료: " + AppConfig.scheduledMarket,
           ColorfulConsoleOutput.GREEN);
+  }
+
+  /**
+   * 거래대금 상위종목 포함 여부 결정 플래그 확인 후 종목 선정.
+   */
+  public void selectUbmi10MarketSelectStrategy() {
+    List<String> ubmi10Markets = new ArrayList<>(
+          Arrays.asList(MarketCode.KRW_BTC.getSymbol(), MarketCode.KRW_ETH.getSymbol(),
+                MarketCode.KRW_XRP.getSymbol(), MarketCode.KRW_SOL.getSymbol(), MarketCode.KRW_DOGE.getSymbol()));
+
+    // 현재 보유 잔고 조회
+    List<AccountResponseDto> accounts = this.getAccount();
+    // 현재 보유 잔고 리스트
+    List<String> holdingMarkets = accounts.stream()
+          // KRW 는 종목이 아니므로 필터링
+          .filter(account -> !"KRW".equals(account.getCurrency()))
+          // 보여종목 리스팅을 위하여 화폐단위 + 마켓코드 조합 처리
+          .map(account -> account.getUnitCurrency() + "-" + account.getCurrency())
+          .toList();
+
+    // 중복 제거를 위한 Set 컬렉션 생성
+    Set<String> set = new HashSet<>();
+    // 보유 종목 추가
+    set.addAll(holdingMarkets);
+    // UBMI 10 종목 추가
+    set.addAll(ubmi10Markets);
+
+    AppConfig.setScheduledMarket(new ArrayList<>(set));
+
+    ColorfulConsoleOutput.printWithColor("종목 업데이트 완료: " + AppConfig.scheduledMarket,
+          ColorfulConsoleOutput.GREEN);
+  }
+
+  /**
+   * 보유 종목을 스케줄링된 시장에 추가합니다.
+   */
+  public void addScheduledMarket() {
+    if (AppConfig.activatedMarketSelectStrategy.equals("dynamic")) {
+      this.selectDynamicMarketSelectStrategy();
+    } else if (AppConfig.activatedMarketSelectStrategy.equals("ubmi_10")) {
+      this.selectUbmi10MarketSelectStrategy();
+    }
   }
 
   /**

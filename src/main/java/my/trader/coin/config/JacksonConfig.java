@@ -7,9 +7,16 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Jackson 라이브러리 Global 설정.
+ */
 @Configuration
 public class JacksonConfig {
 
+  /**
+   * objectMapper 설정.
+   * @return ObjectMapper
+   */
   @Bean
   public ObjectMapper objectMapper() {
     ObjectMapper objectMapper = new ObjectMapper();

@@ -105,7 +105,7 @@ public class ScalpingStrategy {
             ColorfulConsoleOutput.BLUE);
 
       // 손절목표 금액에 도달한경우 손절 신호 발생
-      if (profitRate < -2) {
+      if (profitRate < -1) {
         return Signal.STOP_LOSS;
       }
 
