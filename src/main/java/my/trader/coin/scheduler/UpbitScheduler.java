@@ -190,19 +190,8 @@ public class UpbitScheduler {
     // 계좌 조회
     List<AccountResponseDto> accounts = upbitService.getAccount();
 
-    // 보유 종목 리스트화
-    List<String> markets = accounts.stream()
-          .filter(account -> !"KRW".equals(account.getCurrency()))
-          .map(account -> account.getUnitCurrency() + "-" + account.getCurrency())
-          .toList();
-
-    // 보유 계좌에 현금만 있는 경우 얼리 리턴 처리
-    if (markets.isEmpty()) {
-      return;
-    }
-
     // 시장 데이터 조회
-    List<TickerResponseDto> tickerDataList = upbitService.getTicker(markets);
+    List<TickerResponseDto> tickerDataList = upbitService.getTicker(AppConfig.scheduledMarket);
 
     if (tickerDataList != null && !tickerDataList.isEmpty()) {
       for (TickerResponseDto tickerData : tickerDataList) {

@@ -57,6 +57,6 @@ public class AppConfig {
     minOrderAmount = 5001;
     baseTradeAmount = 250000;
     minTradeAmount = 250000;
-    takeProfitPercentage = 0.5;
+    takeProfitPercentage = 0.3;
   }
 }

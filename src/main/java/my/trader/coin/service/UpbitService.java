@@ -398,9 +398,9 @@ public class UpbitService {
 
     // 중복 제거를 위한 Set 컬렉션 생성
     Set<String> set = new HashSet<>();
-    // 선택된 매수 추가
+    // 고정 매수 종목 추가
     set.addAll(AppConfig.initScheduledMarket);
-    // 보여 종목 추가
+    // 보유 종목 추가
     set.addAll(holdingMarkets);
     // 거래대금 상위 종목 추가
     set.addAll(topTradingMarkets);
@@ -428,24 +428,8 @@ public class UpbitService {
                 MarketCode.KRW_SHIB.getSymbol(),
                 MarketCode.KRW_XML.getSymbol()
           ));
-    // 현재 보유 잔고 조회
-    List<AccountResponseDto> accounts = this.getAccount();
-    // 현재 보유 잔고 리스트
-    List<String> holdingMarkets = accounts.stream()
-          // KRW 는 종목이 아니므로 필터링
-          .filter(account -> !"KRW".equals(account.getCurrency()))
-          // 보여종목 리스팅을 위하여 화폐단위 + 마켓코드 조합 처리
-          .map(account -> account.getUnitCurrency() + "-" + account.getCurrency())
-          .toList();
 
-    // 중복 제거를 위한 Set 컬렉션 생성
-    Set<String> set = new HashSet<>();
-    // 보유 종목 추가
-    set.addAll(holdingMarkets);
-    // UBMI 10 종목 추가
-    set.addAll(ubmi10Markets);
-
-    AppConfig.setScheduledMarket(new ArrayList<>(set));
+    AppConfig.setScheduledMarket(ubmi10Markets);
 
     ColorfulConsoleOutput.printWithColor("종목 업데이트 완료: " + AppConfig.scheduledMarket,
           ColorfulConsoleOutput.GREEN);
