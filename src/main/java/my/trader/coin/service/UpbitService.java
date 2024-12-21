@@ -227,14 +227,16 @@ public class UpbitService {
 
       // 각 uuid 기준으로 주문 취소 요청
       for (OpenOrderResponseDto openOrderResponseDto : openOrders) {
-        // uuid 조회
-        String uuid = openOrderResponseDto.getUuid();
+        if (AppConfig.scheduledMarket.contains(openOrderResponseDto.getMarket())) {
+          // uuid 조회
+          String uuid = openOrderResponseDto.getUuid();
 
-        // 미체결 주문 취소 요청
-        CancelOrderResponseDto result = this.cancelOrder(uuid);
+          // 미체결 주문 취소 요청
+          CancelOrderResponseDto result = this.cancelOrder(uuid);
 
-        // 결과값 추가
-        results.add(result);
+          // 결과값 추가
+          results.add(result);
+        }
       }
     }
 
@@ -418,15 +420,16 @@ public class UpbitService {
     List<String> ubmi10Markets = new ArrayList<>(
           Arrays.asList(
                 MarketCode.KRW_BTC.getSymbol(),
-                MarketCode.KRW_ETH.getSymbol(),
-                MarketCode.KRW_XRP.getSymbol(),
-                MarketCode.KRW_SOL.getSymbol(),
-                MarketCode.KRW_DOGE.getSymbol(),
-                MarketCode.KRW_ADA.getSymbol(),
-                MarketCode.KRW_TRX.getSymbol(),
-                MarketCode.KRW_AVAX.getSymbol(),
-                MarketCode.KRW_SHIB.getSymbol(),
-                MarketCode.KRW_XML.getSymbol()
+//                MarketCode.KRW_ETH.getSymbol(),
+//                MarketCode.KRW_XRP.getSymbol()
+//                MarketCode.KRW_SOL.getSymbol(),
+//                MarketCode.KRW_DOGE.getSymbol(),
+//                MarketCode.KRW_ADA.getSymbol(),
+//                MarketCode.KRW_TRX.getSymbol(),
+//                MarketCode.KRW_AVAX.getSymbol(),
+//                MarketCode.KRW_SHIB.getSymbol(),
+//                MarketCode.KRW_XML.getSymbol(),
+                MarketCode.KRW_CTC.getSymbol()
           ));
 
     AppConfig.setScheduledMarket(ubmi10Markets);
@@ -492,7 +495,7 @@ public class UpbitService {
       roundedValue = (int) Math.floor(ratio) * -1;
     }
 
-    double multipliedValue = roundedValue * 5;
+    double multipliedValue = roundedValue * 4;
 
     return defaultAdx + multipliedValue;
   }

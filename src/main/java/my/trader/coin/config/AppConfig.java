@@ -46,8 +46,11 @@ public class AppConfig {
   static {
     upbitMarketIndexRatio = 0.0;
     initScheduledMarket = new ArrayList<>(
-          Arrays.asList(MarketCode.KRW_BTC.getSymbol(), MarketCode.KRW_ETH.getSymbol(),
-                MarketCode.KRW_XRP.getSymbol()));
+          Arrays.asList(
+                MarketCode.KRW_BTC.getSymbol(),
+                MarketCode.KRW_ETH.getSymbol(),
+                MarketCode.KRW_XRP.getSymbol()
+          ));
     scheduledMarket = initScheduledMarket;
     activatedMarketSelectStrategy = "ubmi_10";
 
@@ -55,8 +58,8 @@ public class AppConfig {
     includeTopTradingStocks = true;
     exchangeFeeRatio = 1.0005;
     minOrderAmount = 5001;
-    baseTradeAmount = 250000;
-    minTradeAmount = 250000;
+    baseTradeAmount = 500000;
+    minTradeAmount = 500000;
     takeProfitPercentage = 0.3;
   }
 }

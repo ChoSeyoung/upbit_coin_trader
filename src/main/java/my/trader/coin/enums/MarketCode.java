@@ -31,7 +31,9 @@ public enum MarketCode {
   // 테더
   KRW_USDT("KRW-USDT"),
   // 매직에덴
-  KRW_ME("KRW-ME");
+  KRW_ME("KRW-ME"),
+  // 크레딧코인
+  KRW_CTC("KRW-CTC");
 
 
   private final String symbol;
