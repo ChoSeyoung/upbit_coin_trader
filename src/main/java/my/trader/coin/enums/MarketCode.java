@@ -33,7 +33,25 @@ public enum MarketCode {
   // 매직에덴
   KRW_ME("KRW-ME"),
   // 크레딧코인
-  KRW_CTC("KRW-CTC");
+  KRW_CTC("KRW-CTC"),
+  // 비트코인골드
+  KRW_BTG("KRW-BTG"),
+  // 에이브
+  KRW_AAVE("KRW-AAVE"),
+  // 수이
+  KRW_SUI("KRW-SUI"),
+  // 온도파이낸스
+  KRW_ONDO("KRW-ONDO"),
+  // 페페
+  KRW_PEPE("KRW-PEPE"),
+  // 샌드박스
+  KRW_SAND("KRW-SAND"),
+  // 체인링크
+  KRW_LINK("KRW-LINK"),
+  // 헤데라
+  KRW_HBAR("KRW-HBAR"),
+  // 아이오타
+  KRW_IOTA("KRW-IOTA");
 
 
   private final String symbol;

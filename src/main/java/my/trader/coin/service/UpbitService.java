@@ -378,13 +378,15 @@ public class UpbitService {
             // 24시간 거래대금 기준 DESC
             .sorted(Comparator.comparing(TickerResponseDto::getAccTradePrice24h).reversed())
             // 전일대비 3% 이하 변동률을 가진 종목만 선택
-            .filter(ticker -> ticker.getChangeRate() <= 0.03)
+            .filter(ticker -> ticker.getChangeRate() <= 0.05)
             // TickerResponseDto DTO 로 변환
             .map(TickerResponseDto::getMarket)
             // 변동률이 적은 USDT 코인은 스캘핑 대상 제외
             .filter(market -> !market.equals(MarketCode.KRW_USDT.getSymbol()))
+            // 상폐 대상 비트코인골드 코인은 스캘핑 대상 제외
+            .filter(market -> !market.equals(MarketCode.KRW_BTG.getSymbol()))
             // 필터링된 종목중 상위 10개만 이용
-            .limit(10)
+            .limit(5)
             .toList();
     }
 
@@ -420,16 +422,43 @@ public class UpbitService {
     List<String> ubmi10Markets = new ArrayList<>(
           Arrays.asList(
                 MarketCode.KRW_BTC.getSymbol(),
-//                MarketCode.KRW_ETH.getSymbol(),
-//                MarketCode.KRW_XRP.getSymbol()
-//                MarketCode.KRW_SOL.getSymbol(),
-//                MarketCode.KRW_DOGE.getSymbol(),
-//                MarketCode.KRW_ADA.getSymbol(),
-//                MarketCode.KRW_TRX.getSymbol(),
-//                MarketCode.KRW_AVAX.getSymbol(),
-//                MarketCode.KRW_SHIB.getSymbol(),
-//                MarketCode.KRW_XML.getSymbol(),
-                MarketCode.KRW_CTC.getSymbol()
+                MarketCode.KRW_ETH.getSymbol(),
+                MarketCode.KRW_XRP.getSymbol(),
+                MarketCode.KRW_SOL.getSymbol(),
+                MarketCode.KRW_DOGE.getSymbol(),
+                MarketCode.KRW_ADA.getSymbol(),
+                MarketCode.KRW_TRX.getSymbol(),
+                MarketCode.KRW_AVAX.getSymbol(),
+                MarketCode.KRW_SHIB.getSymbol(),
+                MarketCode.KRW_XML.getSymbol()
+          ));
+
+    AppConfig.setScheduledMarket(ubmi10Markets);
+
+    ColorfulConsoleOutput.printWithColor("종목 업데이트 완료: " + AppConfig.scheduledMarket,
+          ColorfulConsoleOutput.GREEN);
+  }
+
+  /**
+   * 내맘대로 종목 선정.
+   */
+  public void selectMyMarketSelectStrategy() {
+    List<String> ubmi10Markets = new ArrayList<>(
+          Arrays.asList(
+                MarketCode.KRW_ETH.getSymbol(),
+                MarketCode.KRW_SOL.getSymbol(),
+                MarketCode.KRW_AAVE.getSymbol(),
+                MarketCode.KRW_SUI.getSymbol(),
+                MarketCode.KRW_XRP.getSymbol(),
+                MarketCode.KRW_XML.getSymbol(),
+                MarketCode.KRW_DOGE.getSymbol(),
+                MarketCode.KRW_SHIB.getSymbol(),
+                MarketCode.KRW_PEPE.getSymbol(),
+                MarketCode.KRW_SAND.getSymbol(),
+                MarketCode.KRW_ONDO.getSymbol(),
+                MarketCode.KRW_LINK.getSymbol(),
+                MarketCode.KRW_HBAR.getSymbol(),
+                MarketCode.KRW_IOTA.getSymbol()
           ));
 
     AppConfig.setScheduledMarket(ubmi10Markets);
@@ -446,6 +475,8 @@ public class UpbitService {
       this.selectDynamicMarketSelectStrategy();
     } else if (AppConfig.activatedMarketSelectStrategy.equals("ubmi_10")) {
       this.selectUbmi10MarketSelectStrategy();
+    } else if (AppConfig.activatedMarketSelectStrategy.equals("custom")) {
+      this.selectMyMarketSelectStrategy();
     }
   }
 

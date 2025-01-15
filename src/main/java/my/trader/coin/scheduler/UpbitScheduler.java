@@ -147,9 +147,8 @@ public class UpbitScheduler {
         // 현재 시간
         long currentTime = System.currentTimeMillis();
 
-        // 마지막 매수 시간 확인
+        // 마지막 매수 시간으로 부터 2분 이내 매수시도 시 건너뜀
         Long lastBuyTime = lastBuyTimeMap.get(market);
-        // 1.5분 이내면 매수를 건너뜀
         if (lastBuyTime != null && (currentTime - lastBuyTime) < 2 * 60 * 1000) {
           continue;
         }

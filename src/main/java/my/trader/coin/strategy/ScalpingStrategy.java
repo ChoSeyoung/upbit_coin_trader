@@ -44,14 +44,17 @@ public class ScalpingStrategy {
     // ADX 계산
     double adx = upbitService.calculateAverageDirectionalMovementIndex(candles, 14);
     // 구매에 필요한 최소 ADX 계산
-    double purchaseAdx = upbitService.calculatePurchaseAdx();
+    double minPurchaseAdx = upbitService.calculatePurchaseAdx();
+    double maxPurchaseAdx = upbitService.calculatePurchaseAdx() + 10;
 
     // RSI & ADX 로깅
     ColorfulConsoleOutput.printWithColor(
-          String.format("RSI: %s, ADX: %s/%s", rsi, adx, purchaseAdx), ColorfulConsoleOutput.RED);
+          String.format("RSI: %s, ADX: %s/%s~%s", rsi, adx, minPurchaseAdx, maxPurchaseAdx),
+          ColorfulConsoleOutput.RED);
 
     // 매수 조건 설정 후 플래그 응답
-    return (rsi <= 30 && adx >= purchaseAdx) ? Signal.BUY : Signal.NO_ACTION;
+    return (rsi <= 30 && adx >= minPurchaseAdx && adx <= maxPurchaseAdx) ? Signal.BUY :
+          Signal.NO_ACTION;
   }
 
   /**
@@ -104,9 +107,9 @@ public class ScalpingStrategy {
             ColorfulConsoleOutput.BLUE);
 
       // 손절목표 금액에 도달한경우 손절 신호 발생
-      if (profitRate < -1.5) {
-        return Signal.STOP_LOSS;
-      }
+//      if (profitRate < -1.5) {
+//        return Signal.STOP_LOSS;
+//      }
 
       // 익절목표 금액에 도달한경우 매도 신호 발생
       return (profitRate >= targetProfit) ? Signal.TAKE_PROFIT : Signal.NO_ACTION;

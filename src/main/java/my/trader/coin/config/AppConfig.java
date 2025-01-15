@@ -52,14 +52,14 @@ public class AppConfig {
                 MarketCode.KRW_XRP.getSymbol()
           ));
     scheduledMarket = initScheduledMarket;
-    activatedMarketSelectStrategy = "ubmi_10";
+    activatedMarketSelectStrategy = "custom";
 
     wholeSellWhenProfit = true;
     includeTopTradingStocks = true;
     exchangeFeeRatio = 1.0005;
     minOrderAmount = 5001;
-    baseTradeAmount = 500000;
-    minTradeAmount = 500000;
+    baseTradeAmount = 10000;
+    minTradeAmount = 10000;
     takeProfitPercentage = 0.3;
   }
 }
